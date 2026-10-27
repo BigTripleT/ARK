@@ -59,7 +59,7 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 .tab{background:#3a3a3a;color:#fff;font-size:1.35rem;white-space:nowrap;position:relative}
 .tab.on{background:#fff;color:#111}
 .dot{position:absolute;top:.35rem;right:.5rem;width:.7rem;height:.7rem;border-radius:50%;background:var(--pink)}
-.panel{flex:1;min-height:0;margin:0 .8rem .8rem;border-radius:32px;background:var(--panel);color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
+.panel{position:relative;flex:1;min-height:0;margin:0 .8rem .8rem;border-radius:32px;background:var(--panel);color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
 #log{flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.2rem}
 .m{max-width:min(75%,560px);align-self:flex-start;display:flex;flex-direction:column;gap:.35rem;animation:pop .45s cubic-bezier(.3,1.5,.5,1)}
 .m.me{align-self:flex-end;align-items:flex-end}
@@ -85,6 +85,13 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 #msg:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--ink) 25%,transparent)}
 #send{background:#222;color:#fff;font-size:1.3rem;font-weight:800;padding:0 2rem}
 .compose :disabled{opacity:.5;cursor:not-allowed}
+#gate{position:absolute;inset:0;z-index:2;background:var(--panel);display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;padding:2rem}
+#gate.on{display:flex;animation:pop .5s cubic-bezier(.3,1.5,.5,1)}
+#gate h3{margin:0;font-size:clamp(2.4rem,7vw,4.6rem);font-weight:800;letter-spacing:-.055em;line-height:.95}
+#gate p{margin:0 0 .6rem;color:var(--mute);font-size:1.15rem}
+#nm{width:min(100%,420px);height:62px;border:0;border-radius:999px;background:var(--input);color:var(--ink);font:inherit;font-size:1.3rem;text-align:center;outline:none}
+#join{background:var(--btn);color:var(--btnink);font-size:1.3rem}
+#gerr{color:var(--pink);max-width:24rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -127,6 +134,7 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
   <div class="bar"><button class="pill" id="back">← back</button><h2>The Ark</h2></div>
   <nav id="tabs"></nav>
   <div class="panel">
+    <div id="gate"><h3>who’s coming aboard?</h3><p>just type your name.</p><input id="nm" placeholder="your name" maxlength="24" autocomplete="off"><button class="pill" id="join">come aboard</button><small id="gerr"></small></div>
     <div id="log"></div>
     <div class="compose">
       <button id="cam" aria-label="Send a photo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6dc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg></button>
@@ -137,13 +145,18 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
   </div>
 </div>
 
-<script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInAnonymously,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,collection,doc,getDoc,setDoc,addDoc,updateDoc,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// PASTE YOUR FIREBASE CONFIG HERE (from Firebase console > Project settings > Your apps)
+const FIREBASE_CONFIG={apiKey:"PASTE",authDomain:"PASTE",projectId:"PASTE",appId:"PASTE"};
 const $=s=>document.querySelector(s),root=document.documentElement;
 const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 
-let db=null,user=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,joined=false,shown=false;
+let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false;
 const loadT=Date.now(),pn=id=>names[id]||"someone";
 const vis=m=>tab==="group"?m.to==="group":((m.from===myId&&m.to===tab)||(m.from===tab&&m.to===myId));
 
@@ -176,22 +189,22 @@ function bubble(m){
 function log(jump){
   const L=$("#log"),near=L.scrollHeight-L.scrollTop-L.clientHeight<90;L.textContent="";
   const list=msgs.filter(vis);
-  if(!list.length)L.append(mk("p","sys",!db?"chat opens for signed-in people. open this page from claude.ai.":tab==="group"?"say hi to the group.":"just you and "+pn(tab)+"."));
+  if(!list.length)L.append(mk("p","sys",!ready?"chat isn’t set up yet.":!myId?"pick a name to start chatting.":tab==="group"?"say hi to the group.":"just you and "+pn(tab)+"."));
   list.forEach(m=>L.append(bubble(m)));
   if(jump||near)L.scrollTop=L.scrollHeight;
 }
 function note(t){const L=$("#log"),p=mk("p","sys fade",t);L.append(p);L.scrollTop=L.scrollHeight;setTimeout(()=>p.remove(),2800)}
 
 async function heart(m){
-  if(!db)return;
+  if(!myId)return;
   const h=new Set(m.hearts||[]),add=!h.has(myId);add?h.add(myId):h.delete(myId);
-  try{await db.doc("messages/"+m.id).update({hearts:[...h]});if(add)note("You reacted ♥ to "+(m.from===myId?"your":pn(m.from)+"’s")+" chat")}catch(e){}
+  try{await updateDoc(doc(db,"messages",m.id),{hearts:[...h]});if(add)note("You reacted ♥ to "+(m.from===myId?"your":pn(m.from)+"’s")+" chat")}catch(e){}
 }
 async function send(img){
   const inp=$("#msg"),text=inp.value.trim();
-  if(!db||!myId||(!text&&!img))return;
+  if(!myId||(!text&&!img))return;
   inp.value="";
-  try{await db.collection("messages").add({from:myId,to:tab,text,img:img||"",ts:Date.now(),hearts:[]});$("#log").scrollTop=1e9}
+  try{await addDoc(collection(db,"messages"),{from:myId,to:tab,text,img:img||"",ts:Date.now(),hearts:[]});$("#log").scrollTop=1e9}
   catch(e){note("couldn’t send. you may need contributor access.")}
 }
 function shrink(f,cb){
@@ -208,44 +221,57 @@ $("#open").onclick=async e=>{
   root.style.setProperty("--x",(r.left+r.width/2)+"px");root.style.setProperty("--y",(r.top+r.height/2)+"px");
   document.body.classList.add("open");$("#chat").setAttribute("aria-hidden","false");
   setTimeout(()=>{$("#log").scrollTop=1e9;$("#msg").focus({preventScroll:true})},500);
-  if(db&&myId&&!joined){
-    joined=true;
-    try{const r=db.doc("members/"+myId),s=await r.get();if(!s.exists)await r.set({t:Date.now()})}
-    catch(err){note("couldn’t join. ask the owner for contributor access.")}
-  }
+  if(ready&&!myId){$("#gate").classList.add("on");setTimeout(()=>$("#nm").focus({preventScroll:true}),600)}
 };
 $("#back").onclick=()=>{document.body.classList.remove("open");$("#chat").setAttribute("aria-hidden","true")};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#back").click()});
 $("#send").onclick=()=>send();
 $("#msg").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing)send()});
 $("#cam").onclick=()=>$("#file").click();
-$("#file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f&&db)shrink(f,send)};
+$("#file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f&&myId)shrink(f,send)};
 
-function offline(){db=null;$("#msg").disabled=$("#send").disabled=$("#cam").disabled=true;$("#msg").placeholder="sign in on claude.ai to chat";tabsR();log();pairs()}
-
-(async()=>{
-  for(let i=0;i<20&&!(window.claude&&claude.use);i++)await new Promise(r=>setTimeout(r,150));
-  try{
-    if(!(window.claude&&claude.use))throw 0;
-    [user,db]=await Promise.all([claude.use("user"),claude.use("db")]);
-    if(!user||!db)throw 0;
-    myId=(await user.me()).id||"";if(!myId)throw 0;
-  }catch(e){offline();return}
-  tabsR();pairs();
-  db.collection("members").onSnapshot(async s=>{
-    members=s.docs.map(d=>({id:d.id,t:(d.data()||{}).t||0})).sort((a,b)=>a.t-b.t);
-    try{const ps=await user.profiles(members.map(m=>m.id));members.forEach(m=>{const p=ps[m.id];names[m.id]=(p&&p.name)||""})}catch(e){}
-    pairs();tabsR();log();
+function lock(on){$("#msg").disabled=$("#send").disabled=$("#cam").disabled=on}
+lock(true);$("#msg").placeholder="pick a name first";
+ready=!String(FIREBASE_CONFIG.apiKey).startsWith("PASTE");
+const store=new Map();
+async function start(name){
+  if(started)return;started=true;
+  myId=auth.currentUser.uid;
+  $("#gate").classList.remove("on");lock(false);$("#msg").placeholder="Message the ark";
+  try{const r=doc(db,"members",myId),s=await getDoc(r);
+    if(s.exists())await updateDoc(r,{name});else await setDoc(r,{t:Date.now(),name})}
+  catch(e){note("couldn’t join. check the Firebase rules.")}
+  onSnapshot(collection(db,"members"),s=>{
+    members=s.docs.map(d=>({id:d.id,t:d.data().t||0,name:d.data().name||""})).sort((a,b)=>a.t-b.t);
+    members.forEach(m=>{names[m.id]=m.name});pairs();tabsR();log();
   },()=>{});
-  db.collection("messages").orderBy("ts","desc").limit(300).onSnapshot(s=>{
-    msgs=s.docs.map(d=>({id:d.id,...d.data()})).reverse();
+  const feed=q=>onSnapshot(q,s=>{
+    s.docs.forEach(d=>store.set(d.id,{id:d.id,...d.data()}));
+    msgs=[...store.values()].sort((a,b)=>a.ts-b.ts);
     msgs.forEach(m=>{
       if(seen.has(m.id))return;seen.add(m.id);
       if(!first&&m.ts>loadT&&m.from!==myId&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;if(k!==tab||!document.body.classList.contains("open"))unread[k]=1}
     });
     first=false;tabsR();log();
   },()=>{});
-})();
+  const M=collection(db,"messages");
+  feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
+  tabsR();log();
+}
+if(ready){
+  const app=initializeApp(FIREBASE_CONFIG);auth=getAuth(app);db=getFirestore(app);
+  const saved=()=>{try{return localStorage.getItem("ark-name")||""}catch(e){return""}};
+  onAuthStateChanged(auth,u=>{const n=saved();if(u&&n)start(n)});
+  const join=async()=>{
+    const n=$("#nm").value.trim().slice(0,24);if(!n)return;
+    try{localStorage.setItem("ark-name",n)}catch(e){}
+    $("#join").disabled=true;$("#gerr").textContent="";
+    try{if(!auth.currentUser)await signInAnonymously(auth);await start(n)}
+    catch(e){$("#gerr").textContent="couldn’t sign in. is Anonymous sign-in turned on in Firebase?";$("#join").disabled=false}
+  };
+  $("#join").onclick=join;$("#nm").addEventListener("keydown",e=>{if(e.key==="Enter")join()});
+}
+tabsR();log();pairs();
 </script>
 </body>
 </html>
