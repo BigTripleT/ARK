@@ -62,8 +62,9 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 .m{max-width:min(75%,560px);align-self:flex-start;display:flex;flex-direction:column;gap:.35rem;animation:pop .45s cubic-bezier(.3,1.5,.5,1)}
 .m.me{align-self:flex-end;align-items:flex-end}
 .who2{font-size:.82rem;letter-spacing:.1em;font-weight:800}
-.body{border-left:4px solid var(--c,var(--ink));padding-left:.9rem}
-.m.me .body{border-left:0;border-right:4px solid var(--c,var(--ink));padding:0 .9rem 0 0;text-align:right}
+.m{position:relative}
+.body{border-left:4px solid var(--c,var(--ink));padding:.3rem 0 .3rem .9rem;cursor:pointer}
+.m.me .body{border-left:0;border-right:4px solid var(--c,var(--ink));padding:.3rem .9rem .3rem 0;text-align:right}
 .tx{margin:0;font-size:1.2rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
 .ph{display:block;max-width:100%;max-height:300px;border-radius:18px;margin:.2rem 0}
 .m.me .ph{margin-left:auto}
@@ -105,7 +106,7 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 #rx{font-size:1.1rem;padding:.2rem .5rem}
 .who2::before{content:"";display:inline-block;width:.62em;height:.62em;border-radius:50%;background:var(--c,var(--ink));margin-right:.45em;vertical-align:-.03em}
 .sw{display:inline-block;width:.6em;height:.6em;border-radius:50%;margin-right:.45em;vertical-align:.04em}
-.m.cont{margin-top:-.75rem}
+.m.cont{margin-top:-1.2rem}
 .qt{border-left:3px solid var(--qc,transparent)}
 .acts{flex-wrap:wrap;align-items:center}.m.me .acts{justify-content:flex-end}
 .chip{font-size:.95rem;font-weight:700;border-radius:999px;padding:.15rem .65rem;background:color-mix(in srgb,var(--ink) 9%,transparent);transition:transform .2s}
@@ -117,6 +118,18 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 .pick button:hover{transform:scale(1.35) rotate(-6deg)}
 .bin{display:inline-flex;align-items:center}
 .bin:hover{color:#ff5d5d;opacity:1}
+.rx{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.35rem}
+.m.me .rx{justify-content:flex-end}
+.menu{display:none;position:absolute;top:100%;margin-top:.2rem;z-index:5;align-items:center;gap:.15rem;padding:.3rem .5rem;border-radius:999px;background:var(--dark);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:pop .25s cubic-bezier(.3,1.6,.5,1);white-space:nowrap}
+.m.me .menu{right:0}.m:not(.me) .menu{left:0}
+.m.sel .menu{display:flex}
+.m.sel .body{background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:6px}
+.menu .em{font-size:1.45rem;padding:.1rem .3rem;transition:transform .2s}
+.menu .em:hover{transform:scale(1.35) rotate(-6deg)}
+.menu .act{font-size:.95rem;font-weight:800;padding:.35rem .65rem;border-radius:999px;color:#fff;display:inline-flex;align-items:center;transition:background .2s}
+.menu .act:hover{background:rgba(255,255,255,.16)}
+.menu .bin:hover{color:#ff6b6b}
+.vr{width:1px;align-self:stretch;background:rgba(255,255,255,.25);margin:0 .35rem}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -170,7 +183,7 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 
-let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null;
+let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null;
 const loadT=Date.now(),pn=id=>names[id]||"someone";
 const PAL=["#ff5d8f","#ff9f1c","#f2c744","#2ec4b6","#4ea8ff","#9b7bff","#7bd88f","#e07bff","#17a2b8","#c97b4a"],colors={};
 const col=id=>colors[id]||PAL[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
@@ -215,16 +228,16 @@ function bubble(m,cont){
   if(m.img){const i=new Image();i.src=m.img;i.alt="photo";i.className="ph";body.append(i)}
   if(m.text)body.append(mk("p","tx",m.text));
   d.append(body);
-  const rs=parse(m.hearts),ac=mk("div","acts");
-  Object.keys(rs).forEach(e=>{const c=mk("button","chip"+(rs[e].includes(myId)?" on":""),e+" "+rs[e].length);c.onclick=()=>react(m,e);ac.append(c)});
-  const pk=mk("div","pick");pk.hidden=true;
-  EM.forEach(e=>{const x=mk("button","",e);x.onclick=()=>{pk.hidden=true;react(m,e)};pk.append(x)});
-  const add=mk("button","hrt","\u263a +");add.setAttribute("aria-label","react");add.onclick=()=>{pk.hidden=!pk.hidden};
-  const r=mk("button","hrt","\u21a9 reply");r.onclick=()=>setReply(m);
-  body.ondblclick=()=>react(m,HEART);
-  ac.append(add,r);
-  if(mine){const bn=mk("button","hrt bin");bn.innerHTML=BIN;bn.setAttribute("aria-label","delete message");bn.onclick=()=>del(m);ac.append(bn)}
-  d.append(ac,pk);
+  const rs=parse(m.hearts);
+  if(Object.keys(rs).length){const rx=mk("div","rx");Object.keys(rs).forEach(e=>{const c=mk("button","chip"+(rs[e].includes(myId)?" on":""),e+" "+rs[e].length);c.onclick=ev=>{ev.stopPropagation();react(m,e)};rx.append(c)});body.append(rx)}
+  const mn=mk("div","menu"),close=()=>{d.classList.remove("sel");openMenu=null};
+  EM.forEach(e=>{const x=mk("button","em",e);x.onclick=ev=>{ev.stopPropagation();close();react(m,e)};mn.append(x)});
+  mn.append(mk("i","vr"));
+  const r=mk("button","act","\u21a9 reply");r.onclick=ev=>{ev.stopPropagation();close();setReply(m)};mn.append(r);
+  if(mine){const bn=mk("button","act bin");bn.innerHTML=BIN;bn.setAttribute("aria-label","delete message");bn.onclick=ev=>{ev.stopPropagation();close();del(m)};mn.append(bn)}
+  d.append(mn);
+  if(openMenu===m.id)d.classList.add("sel");
+  body.onclick=()=>{const was=d.classList.contains("sel");document.querySelectorAll(".m.sel").forEach(x=>x.classList.remove("sel"));if(!was){d.classList.add("sel");openMenu=m.id;mn.scrollIntoView({block:"nearest",behavior:"smooth"})}else openMenu=null};
   return d;
 }
 function log(jump){
@@ -252,7 +265,7 @@ async function react(m,emoji){
 async function del(m){
   if(!confirm("Delete this message?"))return;
   try{await deleteDoc(doc(db,"messages",m.id))}
-  catch(e){note("couldn’t delete. the Firebase rules need the delete line.")}
+  catch(e){alert("Couldn’t delete: "+(e.code||e.message)+"\n\nIf it says permission-denied, the Firebase rules are missing the delete line or aren’t published yet.")}
 }
 async function send(img){
   const inp=$("#msg"),text=inp.value.trim();
@@ -282,6 +295,7 @@ $("#back").onclick=()=>{document.body.classList.remove("open");$("#chat").setAtt
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#back").click()});
 $("#send").onclick=()=>send();
 $("#rx").onclick=clearReply;
+$("#log").addEventListener("click",e=>{if(!e.target.closest(".m")){document.querySelectorAll(".m.sel").forEach(x=>x.classList.remove("sel"));openMenu=null}});
 $("#msg").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing)send()});
 $("#cam").onclick=()=>$("#file").click();
 $("#file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f&&myId)shrink(f,send)};
