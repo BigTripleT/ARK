@@ -132,6 +132,26 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 .menu .act:hover{background:rgba(255,255,255,.16)}
 .menu .bin:hover{color:#ff6b6b}
 .vr{width:1px;align-self:stretch;background:rgba(255,255,255,.25);margin:0 .35rem}
+.own{color:#8d8d8d;font-size:.8rem;line-height:1.3;margin-top:.4rem}
+#gear{margin-left:auto;width:48px;height:48px;padding:0;display:grid;place-items:center;background:var(--chip);color:#fff}
+#settings{position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem}
+#settings.on{display:flex;animation:pop .35s cubic-bezier(.3,1.5,.5,1)}
+.card{width:min(100%,460px);max-height:100%;overflow:auto;background:var(--panel);color:var(--ink);border-radius:28px;padding:1.3rem 1.5rem 1.6rem;display:flex;flex-direction:column;gap:.55rem}
+.chead{display:flex;align-items:center;justify-content:space-between}
+.chead h3{margin:0;font-size:2rem;font-weight:800;letter-spacing:-.05em}
+#sx{font-size:1.3rem;padding:.3rem .6rem}
+.card label{font-size:.78rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin-top:.6rem}
+.srow{display:flex;gap:.6rem}
+.srow input{flex:1;min-width:0;height:50px;border:0;border-radius:999px;background:var(--input);color:var(--ink);font:inherit;font-size:1.05rem;padding:0 1.1rem;outline:none}
+.sbtn{background:var(--btn);color:var(--btnink);padding:0 1.2rem;height:50px}
+#sw{display:flex;flex-wrap:wrap;gap:.55rem}
+.swb{width:34px;height:34px;border-radius:50%;border:3px solid transparent;transition:transform .2s}
+.swb:hover:not(:disabled){transform:scale(1.15)}
+.swb.on{border-color:var(--ink)}
+.swb:disabled{opacity:.22;cursor:not-allowed}
+#slogin{color:var(--mute);font-size:.85rem;margin-top:.4rem}
+#smsg{color:var(--pink);min-height:1.1em;font-size:.9rem}
+.out{margin-top:.4rem;background:#2a2a2a;color:#ff6b6b;height:50px}
 .trow{display:flex;align-items:center;gap:.4rem}
 .trow .tab{flex:1;min-width:0}
 .rm{flex:none;width:2.4rem;height:2.4rem;border-radius:50%;background:#2a2a2a;color:#ff6b6b;display:grid;place-items:center;transition:transform .2s,background .2s}
@@ -142,6 +162,48 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 #tabs{flex-direction:row;width:auto;padding:.2rem 1rem .8rem;overflow-x:auto;overflow-y:hidden}
 .tab{width:auto;flex:none}
 .split .panel{margin:0 .8rem .8rem}
+}
+#side{flex:none;display:flex;flex-direction:column;gap:.5rem;width:clamp(120px,15vw,190px);padding:.4rem .5rem 1rem 1rem}
+.sb{display:flex;align-items:center;gap:.6rem;text-align:left;padding:.75rem 1rem;border-radius:18px;font-weight:800;font-size:1.05rem;color:#fff;background:#2a2a2a;transition:transform .2s,background .2s}
+.sb:hover{background:#3a3a3a;transform:translateX(4px)}
+.sb.on{background:#fff;color:#111}
+.sb[hidden]{display:none}
+.sb b{font-size:1.25rem;font-weight:400}
+#tabs{display:flex;flex-direction:row;flex:none;gap:.4rem;width:auto;padding:.5rem 1rem .1rem;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+.tab{background:color-mix(in srgb,var(--ink) 10%,transparent);color:var(--ink);font-size:.88rem;font-weight:700;border-radius:999px;padding:.3em .85em;width:auto;flex:none;overflow:visible;text-overflow:clip;position:relative;transition:transform .2s}
+.tab:hover{transform:scale(1.06)}
+.tab.on{background:var(--ink);color:var(--panel)}
+.tab .dot{top:-.15rem;right:-.15rem}
+.panel.bg{background-size:cover;background-position:center;--ink:#fff;--mute:#e6e6e6;--input:rgba(255,255,255,.2)}
+.panel.bg .tab.on{background:#fff;color:#111}
+.ov{position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:1rem}
+.ov.on{display:flex;animation:pop .35s cubic-bezier(.3,1.5,.5,1)}
+.card select,.card .fld{height:50px;border:0;border-radius:999px;background:var(--input);color:var(--ink);font:inherit;font-size:1.05rem;padding:0 1.1rem;outline:none}
+#ssx,#ox{font-size:1.3rem;padding:.3rem .6rem}
+#sp-img{max-height:180px;max-width:100%;object-fit:contain;border-radius:16px;align-self:center}
+.secs{display:flex;gap:.5rem}
+.secs button{flex:1;height:42px;border-radius:999px;background:var(--input);font-weight:800}
+.secs button.on{background:var(--ink);color:var(--panel)}
+.bgs{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center}
+.obtn{padding:.4em 1em;background:var(--input);font-size:.95rem;color:var(--ink)}
+.obtn.red{background:#ff5d5d;color:#fff}
+.obtn.sel{outline:2px solid var(--ink)}
+.orow{display:flex;align-items:center;gap:.6rem;padding:.35rem 0}
+.orow>span{flex:1}
+.snapc{border-left:4px solid var(--c,var(--ink));padding:.5rem .9rem;font-weight:800;font-size:1rem;border-radius:0 14px 14px 0;background:color-mix(in srgb,var(--c,var(--ink)) 22%,transparent);color:var(--ink);text-align:left;transition:transform .2s}
+.m.me .snapc{border-left:0;border-right:4px solid var(--c,var(--ink));border-radius:14px 0 0 14px;text-align:right}
+.snapc:not(:disabled):hover{transform:scale(1.04)}
+.snapc:disabled{cursor:default}.snapc.done{opacity:.55}
+#snapview{position:absolute;inset:0;z-index:60;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;cursor:pointer}
+#snapview.on{display:flex}
+#sv-img{max-width:100%;max-height:78%;object-fit:contain;border-radius:14px}
+#sv-top{position:absolute;top:calc(env(safe-area-inset-top,0px) + 1rem);left:1rem;right:1rem;display:flex;flex-direction:column;gap:.5rem;font-weight:800}
+#sv-bar{display:block;height:4px;background:#fff;border-radius:2px;transform-origin:left}
+@keyframes svbar{to{transform:scaleX(0)}}
+#sv-cap{margin:0;font-size:1.3rem;font-weight:700;text-align:center;padding:0 1rem}
+@media (max-width:700px){
+#side{flex-direction:row;width:auto;overflow-x:auto;padding:.2rem 1rem .8rem}
+.sb{flex:none;padding:.55rem .9rem}.sb span{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
@@ -173,11 +235,17 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 <div id="chat" aria-hidden="true">
   <div class="bar"><button class="pill" id="back">← back</button><h2>The Ark</h2></div>
   <div class="split">
-  <nav id="tabs"></nav>
+  <nav id="side">
+    <button class="sb on" id="bChat"><b>💬</b><span>chat</span></button>
+    <button class="sb" id="bSnap"><b>📸</b><span>snap</span></button>
+    <button class="sb" id="bSet"><b>⚙️</b><span>settings</span></button>
+    <button class="sb" id="bOwner" hidden><b>🛡️</b><span>owner</span></button>
+  </nav>
   <div class="panel">
     <div id="gate"><h3>who’s coming aboard?</h3><p>type a name and a password, so it’s really you.</p><input id="nm" placeholder="your name" maxlength="24" autocomplete="username"><input id="pw" type="password" placeholder="password (6+ characters)" maxlength="64" autocomplete="current-password"><button class="pill" id="join">come aboard</button><button class="lnk" id="mode" type="button">been here before? sign in</button><small id="gerr"></small></div>
     <div id="log"></div>
     <div id="rbar" hidden><span id="rtx"></span><button id="rx" aria-label="cancel reply">✕</button></div>
+    <div id="tabs"></div>
     <div class="compose">
       <button id="cam" aria-label="Send a photo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#cfc6dc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg></button>
       <input id="msg" placeholder="Message the ark" autocomplete="off" maxlength="1000">
@@ -186,11 +254,45 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
     <input type="file" id="file" accept="image/*" hidden>
   </div>
   </div>
+  <div id="settings" class="ov" aria-hidden="true"><div class="card">
+    <div class="chead"><h3>settings</h3><button id="sx" aria-label="close">✕</button></div>
+    <label>display name</label>
+    <div class="srow"><input id="sname" maxlength="24" autocomplete="off"><button class="pill sbtn" id="ssave">save</button></div>
+    <label>your colour</label>
+    <div id="sw"></div>
+    <label>new password</label>
+    <div class="srow"><input id="spw" type="password" placeholder="6+ characters" maxlength="64" autocomplete="new-password"><button class="pill sbtn" id="spwb">change</button></div>
+    <label>chat background (this device)</label>
+    <div class="bgs" id="bgs"></div>
+    <input type="file" id="bg-file" accept="image/*" hidden>
+    <small id="slogin"></small>
+    <small id="smsg"></small>
+    <button class="pill out" id="sout">sign out</button>
+  </div></div>
+  <div id="snapsend" class="ov" aria-hidden="true"><div class="card">
+    <div class="chead"><h3>send a snap</h3><button id="ssx" aria-label="close">✕</button></div>
+    <img id="sp-img" alt="" hidden>
+    <button class="pill sbtn" id="sp-pick">📸 take or choose a photo</button>
+    <input type="file" id="sp-file" accept="image/*" capture="environment" hidden>
+    <label>send to</label><select id="sp-to"></select>
+    <label>caption</label><input id="sp-cap" class="fld" maxlength="80" placeholder="say something (optional)" autocomplete="off">
+    <label>disappears after</label>
+    <div class="secs" id="sp-secs"><button data-s="3">3s</button><button data-s="5" class="on">5s</button><button data-s="10">10s</button></div>
+    <small id="sp-msg"></small>
+    <button class="pill sbtn" id="sp-send" disabled>send snap</button>
+  </div></div>
+  <div id="ownerp" class="ov" aria-hidden="true"><div class="card">
+    <div class="chead"><h3>owner</h3><button id="ox" aria-label="close">✕</button></div>
+    <label>people</label><div id="olist"></div>
+    <label>banned</label><div id="oban"></div>
+    <small>kick takes someone off the list, and they can come back by reopening the site. ban locks them out until you unban them.</small>
+  </div></div>
+  <div id="snapview"><div id="sv-top"><span id="sv-from"></span><i id="sv-bar"></i></div><img id="sv-img" alt=""><p id="sv-cap"></p><small>tap to close</small></div>
 </div>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updatePassword} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,runTransaction,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const FIREBASE_CONFIG={apiKey:"AIzaSyDEHFK9s8Wzij8xX43FJTYEVrQ72nnDemw",authDomain:"the-ark-5d3ad.firebaseapp.com",projectId:"the-ark-5d3ad",storageBucket:"the-ark-5d3ad.firebasestorage.app",messagingSenderId:"1004284310159",appId:"1:1004284310159:web:39fd646386ab92a804b6fa"};
 const $=s=>document.querySelector(s),root=document.documentElement;
@@ -198,7 +300,7 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 
-let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="";
+let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="",bannedList=[],spImg="",spSecs=5,snapTimer=0;
 const loadT=Date.now(),pn=id=>names[id]||"someone";
 const PAL=["#ff5d8f","#ff9f1c","#f2c744","#2ec4b6","#4ea8ff","#9b7bff","#7bd88f","#e07bff","#17a2b8","#c97b4a"],colors={};
 const col=id=>colors[id]||PAL[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
@@ -222,11 +324,9 @@ function pairs(){
 }
 function tabsR(){
   const n=$("#tabs");n.textContent="";
-  const add=(id,label)=>{const b=mk("button","pill tab"+(tab===id?" on":""),label);if(id!=="group"){const w=mk("i","sw");w.style.background=col(id);b.prepend(w)}if(unread[id]&&tab!==id)b.append(mk("i","dot"));b.onclick=()=>{tab=id;clearReply();delete unread[id];tabsR();log(true)};
-    const row=mk("div","trow");row.append(b);
-    if(ownerId&&ownerId===myId&&id!=="group"&&id!==myId){const x=mk("button","rm");x.innerHTML=BIN;x.setAttribute("aria-label","remove "+label);x.title="remove "+label;x.onclick=()=>removePerson(id,label);row.append(x)}
-    n.append(row)};
+  const add=(id,label)=>{const b=mk("button","tab"+(tab===id?" on":""),label);if(id!=="group"){const w=mk("i","sw");w.style.background=col(id);b.prepend(w)}if(unread[id]&&tab!==id)b.append(mk("i","dot"));b.onclick=()=>{tab=id;clearReply();delete unread[id];tabsR();log(true)};n.append(b)};
   add("group","group");members.filter(m=>m.id!==myId).forEach(m=>add(m.id,pn(m.id)));
+  $("#bOwner").hidden=!(ownerId&&ownerId===myId);
 }
 function clearReply(){replyTo=null;$("#rbar").hidden=true}
 function setReply(m){
@@ -242,6 +342,7 @@ function bubble(m,cont){
   const mine=m.from===myId,d=mk("div","m"+(mine?" me":"")),body=mk("div","body");
   d.dataset.id=m.id;d.style.setProperty("--c",col(m.from));
   if(cont)d.classList.add("cont");else d.append(mk("b","who2",mine?"ME":pn(m.from).toUpperCase()));
+  if(m.snap){const sb=mk("button","snapc"+(m.opened?" done":""),"\ud83d\udcf8 "+(m.opened?"snap opened":mine?"snap sent":"tap to view snap"));sb.disabled=mine||!!m.opened;sb.onclick=()=>viewSnap(m);d.append(sb);return d}
   if(m.re){const q=mk("button","qt");q.append(mk("b","",m.re.from===myId?"you":pn(m.re.from)),mk("span","",m.re.text||"photo"));q.style.setProperty("--qc",col(m.re.from));q.onclick=()=>jump(m.re.id);d.append(q)}
   if(m.img){const i=new Image();i.src=m.img;i.alt="photo";i.className="ph";body.append(i)}
   if(m.text)body.append(mk("p","tx",m.text));
@@ -285,8 +386,78 @@ async function del(m){
   try{await deleteDoc(doc(db,"messages",m.id))}
   catch(e){alert("Couldn’t delete: "+(e.code||e.message)+"\n\nIf it says permission-denied, the Firebase rules are missing the delete line or aren’t published yet.")}
 }
+async function claimOwner(){
+  try{const r=doc(db,"config","owner"),sn=await getDoc(r);
+    if(!sn.exists()){await setDoc(r,{uid:myId});alert("You’re now the owner of the ark. You’ll see an owner tab in the sidebar.")}
+    else alert(sn.data().uid===myId?"You’re already the owner.":"This ark already has an owner.")}
+  catch(e){alert("Couldn’t claim ownership: "+(e.code||e.message)+"\n\nPublish the new Firebase rules first.")}
+}
+const smsg=t=>{$("#smsg").textContent=t};
+function drawSw(){
+  const box=$("#sw");box.textContent="";
+  const used=new Set(members.filter(m=>m.id!==myId).map(m=>colors[m.id]).filter(Boolean));
+  PAL.forEach(c=>{
+    const b=mk("button","swb"+(col(myId)===c?" on":""));b.style.background=c;b.disabled=used.has(c);b.setAttribute("aria-label","choose colour");
+    b.onclick=async()=>{try{await updateDoc(doc(db,"members",myId),{color:c});colors[myId]=c;drawSw();tabsR();log();smsg("colour saved.")}catch(e){smsg("couldn’t save that colour.")}};
+    box.append(b);
+  });
+}
+function openSettings(){
+  if(!myId)return;
+  $("#sname").value=names[myId]||"";
+  const em=(auth.currentUser&&auth.currentUser.email)||"";
+  $("#slogin").textContent="you sign in with the name “"+em.split("@")[0]+"”. that part never changes.";
+  smsg("");drawSw();drawBgs();$("#settings").classList.add("on");
+}
+const BGS=[["none",""],["sunset","linear-gradient(135deg,#ff9a76,#ff5d8f 55%,#6a3df0)"],["ocean","linear-gradient(160deg,#2ec4b6,#2b6cb0 60%,#1a1f4b)"],["forest","linear-gradient(160deg,#7bd88f,#1f7a5a 55%,#0f2b2b)"],["night","linear-gradient(160deg,#2a2a5a,#0d0d1f)"]];
+const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return""}};
+function applyBg(){
+  const P=$(".panel"),k=lsGet("ark-bg"),g=BGS.find(b=>b[0]===k),ph=lsGet("ark-bgp");
+  const v=k==="photo"&&ph?'linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url("'+ph+'")':g&&g[1]?g[1]:"";
+  P.classList.toggle("bg",!!v);P.style.backgroundImage=v;
+}
+function drawBgs(){
+  const box=$("#bgs"),k=lsGet("ark-bg");box.textContent="";
+  BGS.forEach(([n,g])=>{const b=mk("button","swb"+((k||"none")===n?" on":""));b.style.background=g||"var(--input)";b.title=n;b.setAttribute("aria-label",n+" background");b.onclick=()=>{try{localStorage.setItem("ark-bg",n==="none"?"":n)}catch(e){}applyBg();drawBgs()};box.append(b)});
+  const p=mk("button","pill obtn"+(k==="photo"?" sel":""),"my photo…");p.onclick=()=>$("#bg-file").click();box.append(p);
+}
+function setOn(b){document.querySelectorAll(".sb").forEach(x=>x.classList.toggle("on",x===b))}
+function closeOv(){document.querySelectorAll(".ov.on").forEach(x=>x.classList.remove("on"));setOn($("#bChat"))}
+function openSnap(){
+  if(!myId)return;
+  spImg="";$("#sp-img").hidden=true;$("#sp-send").disabled=true;$("#sp-msg").textContent="";$("#sp-cap").value="";
+  const sel=$("#sp-to");sel.textContent="";
+  members.filter(m=>m.id!==myId).forEach(m=>{const o=mk("option","",pn(m.id));o.value=m.id;sel.append(o)});
+  if(tab!=="group")sel.value=tab;
+  if(!sel.options.length)$("#sp-msg").textContent="nobody else is on board yet.";
+  $("#snapsend").classList.add("on");
+}
+async function viewSnap(m){
+  const v=$("#snapview"),im=$("#sv-img"),bar=$("#sv-bar"),secs=m.secs||5;
+  im.src=m.img;$("#sv-cap").textContent=m.text||"";$("#sv-from").textContent=pn(m.from);
+  v.classList.add("on");bar.style.animation="none";void bar.offsetWidth;bar.style.animation="svbar "+secs+"s linear forwards";
+  let done=false;
+  const end=async()=>{if(done)return;done=true;clearTimeout(snapTimer);v.classList.remove("on");im.src="";
+    try{await updateDoc(doc(db,"messages",m.id),{img:"",opened:true})}catch(e){}};
+  snapTimer=setTimeout(end,secs*1000);v.onclick=end;
+}
+function drawOwner(){
+  const L=$("#olist"),B=$("#oban");L.textContent="";B.textContent="";
+  const others=members.filter(m=>m.id!==myId);
+  if(!others.length)L.append(mk("small","","nobody else is here yet."));
+  others.forEach(m=>{const r=mk("div","orow"),w=mk("i","sw");w.style.background=col(m.id);r.append(w,mk("span","",pn(m.id)));
+    const k=mk("button","pill obtn","kick");k.onclick=()=>kick(m.id);
+    const x=mk("button","pill obtn red","ban");x.onclick=()=>removePerson(m.id,pn(m.id));r.append(k,x);L.append(r)});
+  if(!bannedList.length)B.append(mk("small","","nobody is banned."));
+  bannedList.forEach(x=>{const r=mk("div","orow");r.append(mk("span","",x.name||"someone"));const u=mk("button","pill obtn","unban");u.onclick=()=>unban(x.id);r.append(u);B.append(r)});
+}
+async function kick(id){
+  if(!confirm("Kick "+pn(id)+"? They can come back by reopening the site."))return;
+  try{await deleteDoc(doc(db,"members",id))}catch(e){alert("Couldn’t kick: "+(e.code||e.message))}
+}
+async function unban(id){try{await deleteDoc(doc(db,"banned",id))}catch(e){alert("Couldn’t unban: "+(e.code||e.message))}}
 async function removePerson(id,label){
-  if(!confirm("Remove "+label+" from the ark? They won’t be able to get back in with that account."))return;
+  if(!confirm("Ban "+label+"? They’ll be locked out until you unban them."))return;
   try{await setDoc(doc(db,"banned",id),{t:Date.now(),name:label});await deleteDoc(doc(db,"members",id));if(tab===id){tab="group";tabsR();log(true)}}
   catch(e){alert("Couldn’t remove them: "+(e.code||e.message)+"\n\nIf it says permission-denied, publish the new Firebase rules and make sure you’ve claimed ownership.")}
 }
@@ -302,12 +473,12 @@ async function send(img){
   try{await addDoc(collection(db,"messages"),{from:myId,to:tab,text,img:img||"",ts:Date.now(),hearts:[],...(re?{re}:{})});$("#log").scrollTop=1e9}
   catch(e){note("couldn’t send. you may need contributor access.")}
 }
-function shrink(f,cb){
+function shrink(f,cb,max,lim){
   const fr=new FileReader();
   fr.onload=()=>{const i=new Image();i.onload=()=>{
-    const k=Math.min(1,720/Math.max(i.width,i.height)),c=document.createElement("canvas");
+    const k=Math.min(1,(max||720)/Math.max(i.width,i.height)),c=document.createElement("canvas");
     c.width=i.width*k|0;c.height=i.height*k|0;c.getContext("2d").drawImage(i,0,0,c.width,c.height);
-    let q=.72,u=c.toDataURL("image/jpeg",q);while(u.length>180000&&q>.3){q-=.1;u=c.toDataURL("image/jpeg",q)}cb(u)};i.src=fr.result};
+    let q=.72,u=c.toDataURL("image/jpeg",q);while(u.length>(lim||180000)&&q>.3){q-=.1;u=c.toDataURL("image/jpeg",q)}cb(u)};i.src=fr.result};
   fr.readAsDataURL(f);
 }
 
@@ -318,10 +489,39 @@ $("#open").onclick=async e=>{
   setTimeout(()=>{$("#log").scrollTop=1e9;$("#msg").focus({preventScroll:true})},500);
   if(ready&&!myId){$("#gate").classList.add("on");setTimeout(()=>$("#nm").focus({preventScroll:true}),600)}
 };
-$("#back").onclick=()=>{document.body.classList.remove("open");$("#chat").setAttribute("aria-hidden","true")};
-document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#back").click()});
+$("#back").onclick=()=>{closeOv();document.body.classList.remove("open");$("#chat").setAttribute("aria-hidden","true")};
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(document.querySelector(".ov.on"))closeOv();else $("#back").click()}});
 $("#send").onclick=()=>send();
 $("#rx").onclick=clearReply;
+$("#bChat").onclick=closeOv;
+$("#bSnap").onclick=()=>{closeOv();openSnap();setOn($("#bSnap"))};
+$("#bSet").onclick=()=>{closeOv();openSettings();setOn($("#bSet"))};
+$("#bOwner").onclick=()=>{closeOv();drawOwner();$("#ownerp").classList.add("on");setOn($("#bOwner"))};
+document.querySelectorAll(".ov").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOv()}));
+$("#ssx").onclick=closeOv;$("#ox").onclick=closeOv;
+$("#sp-pick").onclick=()=>$("#sp-file").click();
+$("#sp-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>{spImg=u;$("#sp-img").src=u;$("#sp-img").hidden=false;$("#sp-send").disabled=false},900,220000)};
+$("#sp-secs").onclick=e=>{const b=e.target.closest("button");if(!b)return;spSecs=+b.dataset.s;[...$("#sp-secs").children].forEach(x=>x.classList.toggle("on",x===b))};
+$("#sp-send").onclick=async()=>{
+  const to=$("#sp-to").value;if(!to||!spImg){$("#sp-msg").textContent="pick a photo and a person.";return}
+  try{await addDoc(collection(db,"messages"),{from:myId,to,snap:true,img:spImg,text:$("#sp-cap").value.trim(),secs:spSecs,opened:false,ts:Date.now(),hearts:[]});closeOv();tab=to;tabsR();log(true)}
+  catch(e){$("#sp-msg").textContent="couldn’t send. publish the new Firebase rules first."}
+};
+$("#bg-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>{try{localStorage.setItem("ark-bgp",u);localStorage.setItem("ark-bg","photo")}catch(err){smsg("that photo is too big for this browser.")}applyBg();drawBgs()},1280,700000)};
+$("#sx").onclick=closeOv;
+$("#settings").addEventListener("click",e=>{if(e.target.id==="settings")e.target.classList.remove("on")});
+$("#ssave").onclick=async()=>{
+  const n=$("#sname").value.trim().slice(0,24);if(!n){smsg("type a name first.");return}
+  try{await updateDoc(doc(db,"members",myId),{name:n});names[myId]=n;try{localStorage.setItem("ark-name",n)}catch(e){}pairs();tabsR();log();smsg("name saved.")}
+  catch(e){smsg("couldn’t save. try again.")}
+};
+$("#spwb").onclick=async()=>{
+  const pw=$("#spw").value;if(pw.length<6){smsg("password needs 6 or more characters.");return}
+  try{await updatePassword(auth.currentUser,pw);$("#spw").value="";smsg("password changed.")}
+  catch(e){smsg((e.code||"").includes("recent")?"for safety, sign out, sign back in, then change it.":"couldn’t change it. try again.")}
+};
+$("#sout").onclick=async()=>{try{localStorage.removeItem("ark-name")}catch(e){}try{await signOut(auth)}catch(e){}location.reload()};
+addEventListener("hashchange",()=>{if(location.hash==="#claim"&&myId)claimOwner()});
 $("#log").addEventListener("click",e=>{if(!e.target.closest(".m")){document.querySelectorAll(".m.sel").forEach(x=>x.classList.remove("sel"));openMenu=null}});
 $("#msg").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing)send()});
 $("#cam").onclick=()=>$("#file").click();
@@ -338,11 +538,11 @@ async function start(name){
   $("#gate").classList.remove("on");lock(false);$("#msg").placeholder="Message the ark";
   try{const r=doc(db,"members",myId),s=await getDoc(r);let color=s.exists()?s.data().color:"";
     if(!color){const all=await getDocs(collection(db,"members")),used=new Set(all.docs.map(x=>x.data().color).filter(Boolean));color=PAL.find(c=>!used.has(c))||PAL[Math.floor(Math.random()*PAL.length)]}
-    if(s.exists())await updateDoc(r,{...(name?{name}:{}),color});else await setDoc(r,{t:Date.now(),name:name||"someone",color})}
+    if(s.exists())await updateDoc(r,{...(name&&!s.data().name?{name}:{}),color});else await setDoc(r,{t:Date.now(),name:name||"someone",color})}
   catch(e){note("couldn’t join. check the Firebase rules.")}
   onSnapshot(collection(db,"members"),s=>{
     members=s.docs.map(d=>({id:d.id,t:d.data().t||0,name:d.data().name||"",color:d.data().color||""})).sort((a,b)=>a.t-b.t);
-    members.forEach(m=>{names[m.id]=m.name;if(m.color)colors[m.id]=m.color});pairs();tabsR();log();
+    members.forEach(m=>{names[m.id]=m.name;if(m.color)colors[m.id]=m.color});pairs();tabsR();log();if($("#ownerp").classList.contains("on"))drawOwner();
   },()=>{});
   const feed=q=>onSnapshot(q,s=>{
     s.docChanges().forEach(c=>{if(c.type==="removed")store.delete(c.doc.id);else store.set(c.doc.id,{id:c.doc.id,...c.doc.data()})});
@@ -353,13 +553,11 @@ async function start(name){
     });
     first=false;tabsR();log();
   },()=>{});
-  onSnapshot(doc(db,"config","owner"),s=>{ownerId=s.exists()?s.data().uid:"";tabsR()},()=>{});
-  if(location.hash==="#claim"){
-    try{const r=doc(db,"config","owner"),sn=await getDoc(r);
-      if(!sn.exists()){await setDoc(r,{uid:myId});alert("You’re now the owner of the ark. You’ll see a bin next to each person in the sidebar.")}
-      else alert(sn.data().uid===myId?"You’re already the owner.":"This ark already has an owner.")}
-    catch(e){alert("Couldn’t claim ownership. Publish the new Firebase rules first.")}
-  }
+  let banSub=false;
+  onSnapshot(doc(db,"config","owner"),s=>{ownerId=s.exists()?s.data().uid:"";tabsR();
+    if(ownerId&&ownerId===myId&&!banSub){banSub=true;onSnapshot(collection(db,"banned"),b=>{bannedList=b.docs.map(d=>({id:d.id,...d.data()}));if($("#ownerp").classList.contains("on"))drawOwner()},()=>{})}
+  },()=>{});
+  if(location.hash==="#claim")claimOwner();
   const M=collection(db,"messages");
   feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
   tabsR();log();
@@ -388,7 +586,7 @@ if(ready){
   };
   $("#join").onclick=join;[$("#nm"),$("#pw")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")join()}));
 }
-tabsR();log();pairs();
+tabsR();log();pairs();applyBg();
 </script>
 </body>
 </html>
