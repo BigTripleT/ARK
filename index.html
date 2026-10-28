@@ -341,7 +341,7 @@ body.open .sb:nth-child(1){animation-delay:.35s}body.open .sb:nth-child(2){anima
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {getAuth,createUserWithEmailAndPassword,signInWithEmailAndPassword,onAuthStateChanged,signOut,updatePassword} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,runTransaction,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,arrayUnion,runTransaction,onSnapshot,query,where} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const FIREBASE_CONFIG={apiKey:"AIzaSyDEHFK9s8Wzij8xX43FJTYEVrQ72nnDemw",authDomain:"the-ark-5d3ad.firebaseapp.com",projectId:"the-ark-5d3ad",storageBucket:"the-ark-5d3ad.firebasestorage.app",messagingSenderId:"1004284310159",appId:"1:1004284310159:web:39fd646386ab92a804b6fa"};
 const $=s=>document.querySelector(s),root=document.documentElement;
 const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -390,7 +390,8 @@ function bubble(m,cont){
   const mine=m.from===myId,d=mk("div","m"+(mine?" me":"")),body=mk("div","body");
   d.dataset.id=m.id;d.style.setProperty("--c",col(m.from));
   if(cont)d.classList.add("cont");else d.append(mk("b","who2",mine?"ME":pn(m.from).toUpperCase()));
-  if(m.snap){const sb=mk("button","snapc"+(m.opened?" done":""),"\ud83d\udcf8 "+(m.opened?"snap opened":mine?"snap sent":"tap to view snap"));sb.disabled=mine||!!m.opened;sb.onclick=()=>viewSnap(m);d.append(sb);return d}
+  if(m.snap){const grp=m.to==="group",vw=m.viewed||[],done=grp?vw.includes(myId):!!m.opened;
+    const sb=mk("button","snapc"+(done?" done":""),"\ud83d\udcf8 "+(mine?(grp?"snap sent · seen by "+vw.length:m.opened?"snap opened":"snap sent"):done?"snap opened":"tap to view snap"));sb.disabled=mine||done;sb.onclick=()=>viewSnap(m);d.append(sb);return d}
   if(m.re){const q=mk("button","qt");q.append(mk("b","",m.re.from===myId?"you":pn(m.re.from)),mk("span","",m.re.text||"photo"));q.style.setProperty("--qc",col(m.re.from));q.onclick=()=>jump(m.re.id);d.append(q)}
   if(m.img){const i=new Image();i.src=m.img;i.alt="photo";i.className="ph";body.append(i)}
   if(m.text)body.append(mk("p","tx",m.text));
@@ -598,10 +599,10 @@ async function startCam(){
 function gotPhoto(u){
   spImg=u;$("#sp-img").src=u;snapView("prev");
   const sel=$("#sp-to");sel.textContent="";
+  const g=mk("option","","Everyone (group)");g.value="group";sel.append(g);
   members.filter(m=>m.id!==myId).forEach(m=>{const o=mk("option","",pn(m.id));o.value=m.id;sel.append(o)});
-  if(tab!=="group")sel.value=tab;
-  $("#sp-send").disabled=!sel.options.length;
-  $("#sp-msg").textContent=sel.options.length?"":"nobody else is on board yet, so you can only send to chat.";
+  sel.value=tab;
+  $("#sp-send").disabled=false;$("#sp-msg").textContent="";
 }
 function openSnap(){
   if(!myId)return;
@@ -628,7 +629,7 @@ async function viewSnap(m){
   v.classList.add("on");bar.style.animation="none";void bar.offsetWidth;bar.style.animation="svbar "+secs+"s linear forwards";
   let done=false;
   const end=async()=>{if(done)return;done=true;clearTimeout(snapTimer);v.classList.remove("on");im.src="";
-    try{await updateDoc(doc(db,"messages",m.id),{img:"",opened:true})}catch(e){alert("This snap couldn’t be marked as opened ("+(e.code||e.message)+"). Publish the latest Firebase rules.")}};
+    try{await updateDoc(doc(db,"messages",m.id),m.to==="group"?{viewed:arrayUnion(myId)}:{img:"",opened:true})}catch(e){alert("This snap couldn’t be marked as opened ("+(e.code||e.message)+"). Publish the latest Firebase rules.")}};
   snapTimer=setTimeout(end,secs*1000);v.onclick=end;
 }
 function drawOwner(){
@@ -708,7 +709,7 @@ $("#sp-secs").onclick=e=>{const b=e.target.closest("button");if(!b)return;spSecs
 $("#sp-send").onclick=async()=>{
   const to=$("#sp-to").value;if(!to||!spImg){$("#sp-msg").textContent="pick a person first.";return}
   $("#sp-send").disabled=true;
-  try{await addDoc(collection(db,"messages"),{from:myId,to,snap:true,img:spImg,text:$("#sp-cap").value.trim(),secs:spSecs,opened:false,ts:Date.now(),hearts:[]});closeOv();tab=to;tabsR();log(true)}
+  try{await addDoc(collection(db,"messages"),{from:myId,to,snap:true,img:spImg,text:$("#sp-cap").value.trim(),secs:spSecs,opened:false,ts:Date.now(),hearts:[],...(to==="group"?{viewed:[]}:{})});closeOv();tab=to;tabsR();log(true)}
   catch(e){$("#sp-msg").textContent="couldn’t send the snap: "+(e.code||e.message);$("#sp-send").disabled=false}
 };
 $("#sp-chat").onclick=async()=>{const inp=$("#msg"),old=inp.value;inp.value=$("#sp-cap").value;await send(spImg);inp.value=old;closeOv()};
@@ -764,6 +765,7 @@ async function start(name){
     msgs=[...store.values()].sort((a,b)=>a.ts-b.ts);
     msgs.forEach(m=>{
       if(seen.has(m.id))return;seen.add(m.id);
+      if(m.snap&&m.to==="group"&&m.from===myId&&Date.now()-m.ts>864e5)deleteDoc(doc(db,"messages",m.id)).catch(()=>{});
       if(!first&&m.ts>loadT&&m.from!==myId&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;const here=document.body.classList.contains("open")&&k===tab&&!document.hidden;if(!here){unread[k]=1;notify(m)}}
     });
     first=false;tabsR();log();
@@ -780,10 +782,11 @@ async function start(name){
   },()=>{});
   let fxFirst=true,fxK="";
   onSnapshot(doc(db,"fx","latest"),s=>{
+    if(s.metadata.fromCache||s.metadata.hasPendingWrites)return;
     const d=s.exists()?s.data():null;
     if(fxFirst){fxFirst=false;fxK=d?d.k:"";return}
     if(d&&d.k!==fxK){fxK=d.k;playFx(d)}
-  },()=>{});
+  },e=>console.warn("effects listener:",e.code));
   const M=collection(db,"messages");
   feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
   tabsR();log();
