@@ -201,6 +201,15 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 #sv-bar{display:block;height:4px;background:#fff;border-radius:2px;transform-origin:left}
 @keyframes svbar{to{transform:scaleX(0)}}
 #sv-cap{margin:0;font-size:1.3rem;font-weight:700;text-align:center;padding:0 1rem}
+#cam-choice{display:flex;flex-direction:column;gap:.7rem;padding:.4rem 0}
+#cam-choice .pill{height:58px;font-size:1.1rem}
+#cam-wrap,#sp-prev{display:flex;flex-direction:column;gap:.55rem}
+#cam-choice[hidden],#cam-wrap[hidden],#sp-prev[hidden]{display:none}
+#cam-v{width:100%;max-height:320px;object-fit:cover;border-radius:20px;background:#000;transform:scaleX(-1)}
+#cam-v.back{transform:none}
+.camrow{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+#cam-shot{width:70px;height:70px;border-radius:50%;background:#fff;border:5px solid color-mix(in srgb,var(--ink) 35%,transparent);transition:transform .15s}
+#cam-shot:active{transform:scale(.9)}
 @media (max-width:700px){
 #side{flex-direction:row;width:auto;overflow-x:auto;padding:.2rem 1rem .8rem}
 .sb{flex:none;padding:.55rem .9rem}.sb span{display:none}
@@ -262,6 +271,9 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
     <div id="sw"></div>
     <label>new password</label>
     <div class="srow"><input id="spw" type="password" placeholder="6+ characters" maxlength="64" autocomplete="new-password"><button class="pill sbtn" id="spwb">change</button></div>
+    <label>notifications</label>
+    <div class="srow"><button class="pill obtn" id="nbtn">turn on notifications</button></div>
+    <small id="nmsg"></small>
     <label>chat background (this device)</label>
     <div class="bgs" id="bgs"></div>
     <input type="file" id="bg-file" accept="image/*" hidden>
@@ -270,16 +282,20 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
     <button class="pill out" id="sout">sign out</button>
   </div></div>
   <div id="snapsend" class="ov" aria-hidden="true"><div class="card">
-    <div class="chead"><h3>send a snap</h3><button id="ssx" aria-label="close">✕</button></div>
-    <img id="sp-img" alt="" hidden>
-    <button class="pill sbtn" id="sp-pick">📸 take or choose a photo</button>
-    <input type="file" id="sp-file" accept="image/*" capture="environment" hidden>
-    <label>send to</label><select id="sp-to"></select>
-    <label>caption</label><input id="sp-cap" class="fld" maxlength="80" placeholder="say something (optional)" autocomplete="off">
-    <label>disappears after</label>
-    <div class="secs" id="sp-secs"><button data-s="3">3s</button><button data-s="5" class="on">5s</button><button data-s="10">10s</button></div>
+    <div class="chead"><h3>camera</h3><button id="ssx" aria-label="close">✕</button></div>
+    <div id="cam-choice"><button class="pill sbtn" id="c-cam">📷 use camera</button><button class="pill obtn" id="sp-pick">🖼️ choose a photo</button></div>
+    <div id="cam-wrap" hidden><video id="cam-v" playsinline muted autoplay></video>
+      <div class="camrow"><button class="pill obtn" id="cam-flip">flip</button><button id="cam-shot" aria-label="take photo"></button><button class="pill obtn" id="cam-back">back</button></div></div>
+    <div id="sp-prev" hidden>
+      <img id="sp-img" alt=""><button class="pill obtn" id="sp-retake">retake</button>
+      <label>send snap to</label><select id="sp-to"></select>
+      <label>caption</label><input id="sp-cap" class="fld" maxlength="80" placeholder="say something (optional)" autocomplete="off">
+      <label>snap disappears after</label>
+      <div class="secs" id="sp-secs"><button data-s="3">3s</button><button data-s="5" class="on">5s</button><button data-s="10">10s</button></div>
+      <div class="srow"><button class="pill sbtn" id="sp-send">send snap</button><button class="pill obtn" id="sp-chat">send to chat</button></div>
+    </div>
     <small id="sp-msg"></small>
-    <button class="pill sbtn" id="sp-send" disabled>send snap</button>
+    <input type="file" id="sp-file" accept="image/*" hidden>
   </div></div>
   <div id="ownerp" class="ov" aria-hidden="true"><div class="card">
     <div class="chead"><h3>owner</h3><button id="ox" aria-label="close">✕</button></div>
@@ -407,7 +423,7 @@ function openSettings(){
   $("#sname").value=names[myId]||"";
   const em=(auth.currentUser&&auth.currentUser.email)||"";
   $("#slogin").textContent="you sign in with the name “"+em.split("@")[0]+"”. that part never changes.";
-  smsg("");drawSw();drawBgs();$("#settings").classList.add("on");
+  smsg("");drawSw();drawBgs();drawNotif();$("#settings").classList.add("on");
 }
 const BGS=[["none",""],["sunset","linear-gradient(135deg,#ff9a76,#ff5d8f 55%,#6a3df0)"],["ocean","linear-gradient(160deg,#2ec4b6,#2b6cb0 60%,#1a1f4b)"],["forest","linear-gradient(160deg,#7bd88f,#1f7a5a 55%,#0f2b2b)"],["night","linear-gradient(160deg,#2a2a5a,#0d0d1f)"]];
 const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return""}};
@@ -422,15 +438,44 @@ function drawBgs(){
   const p=mk("button","pill obtn"+(k==="photo"?" sel":""),"my photo…");p.onclick=()=>$("#bg-file").click();box.append(p);
 }
 function setOn(b){document.querySelectorAll(".sb").forEach(x=>x.classList.toggle("on",x===b))}
-function closeOv(){document.querySelectorAll(".ov.on").forEach(x=>x.classList.remove("on"));setOn($("#bChat"))}
-function openSnap(){
-  if(!myId)return;
-  spImg="";$("#sp-img").hidden=true;$("#sp-send").disabled=true;$("#sp-msg").textContent="";$("#sp-cap").value="";
+function closeOv(){stopCam();document.querySelectorAll(".ov.on").forEach(x=>x.classList.remove("on"));setOn($("#bChat"))}
+let stream=null,camFace="user";
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+function snapView(v){$("#cam-choice").hidden=v!=="choice";$("#cam-wrap").hidden=v!=="live";$("#sp-prev").hidden=v!=="prev";if(v!=="live")stopCam()}
+async function startCam(){
+  stopCam();const m=$("#sp-msg");m.textContent="";
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){m.textContent="this browser can’t open the camera. choose a photo instead.";return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFace},audio:false});
+    const v=$("#cam-v");v.srcObject=stream;v.classList.toggle("back",camFace!=="user");await v.play();snapView("live");
+  }catch(e){snapView("choice");m.textContent="couldn’t open the camera. allow camera access in your browser, or choose a photo."}
+}
+function gotPhoto(u){
+  spImg=u;$("#sp-img").src=u;snapView("prev");
   const sel=$("#sp-to");sel.textContent="";
   members.filter(m=>m.id!==myId).forEach(m=>{const o=mk("option","",pn(m.id));o.value=m.id;sel.append(o)});
   if(tab!=="group")sel.value=tab;
-  if(!sel.options.length)$("#sp-msg").textContent="nobody else is on board yet.";
-  $("#snapsend").classList.add("on");
+  $("#sp-send").disabled=!sel.options.length;
+  $("#sp-msg").textContent=sel.options.length?"":"nobody else is on board yet, so you can only send to chat.";
+}
+function openSnap(){
+  if(!myId)return;
+  spImg="";$("#sp-cap").value="";$("#sp-msg").textContent="";snapView("choice");$("#snapsend").classList.add("on");
+}
+let unreadN=0;
+async function notify(m){
+  unreadN++;if(document.hidden)document.title="("+unreadN+") The Ark";
+  if(lsGet("ark-notif")!=="1"||!("Notification" in window)||Notification.permission!=="granted")return;
+  const title=pn(m.from)+(m.to==="group"?" · group":""),body=m.snap?"sent you a snap":(m.text||"sent a photo");
+  try{
+    const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();
+    if(reg&&reg.showNotification)reg.showNotification(title,{body,tag:m.id});else new Notification(title,{body,tag:m.id});
+  }catch(e){}
+}
+function drawNotif(){
+  const ok="Notification" in window,on=ok&&lsGet("ark-notif")==="1"&&Notification.permission==="granted";
+  $("#nbtn").textContent=on?"notifications on (tap to turn off)":"turn on notifications";
+  $("#nmsg").textContent=!ok?"this browser doesn’t support notifications.":Notification.permission==="denied"?"notifications are blocked. allow them in your browser’s site settings.":"you’ll get a ping when someone messages while this site is open in a tab.";
 }
 async function viewSnap(m){
   const v=$("#snapview"),im=$("#sv-img"),bar=$("#sv-bar"),secs=m.secs||5;
@@ -438,7 +483,7 @@ async function viewSnap(m){
   v.classList.add("on");bar.style.animation="none";void bar.offsetWidth;bar.style.animation="svbar "+secs+"s linear forwards";
   let done=false;
   const end=async()=>{if(done)return;done=true;clearTimeout(snapTimer);v.classList.remove("on");im.src="";
-    try{await updateDoc(doc(db,"messages",m.id),{img:"",opened:true})}catch(e){}};
+    try{await updateDoc(doc(db,"messages",m.id),{img:"",opened:true})}catch(e){alert("This snap couldn’t be marked as opened ("+(e.code||e.message)+"). Publish the latest Firebase rules.")}};
   snapTimer=setTimeout(end,secs*1000);v.onclick=end;
 }
 function drawOwner(){
@@ -499,14 +544,39 @@ $("#bSet").onclick=()=>{closeOv();openSettings();setOn($("#bSet"))};
 $("#bOwner").onclick=()=>{closeOv();drawOwner();$("#ownerp").classList.add("on");setOn($("#bOwner"))};
 document.querySelectorAll(".ov").forEach(o=>o.addEventListener("click",e=>{if(e.target===o)closeOv()}));
 $("#ssx").onclick=closeOv;$("#ox").onclick=closeOv;
+$("#c-cam").onclick=startCam;
+$("#cam-back").onclick=()=>snapView("choice");
+$("#cam-flip").onclick=()=>{camFace=camFace==="user"?"environment":"user";startCam()};
+$("#cam-shot").onclick=()=>{
+  const v=$("#cam-v");if(!v.videoWidth)return;
+  const k=Math.min(1,900/Math.max(v.videoWidth,v.videoHeight)),c=document.createElement("canvas");
+  c.width=v.videoWidth*k|0;c.height=v.videoHeight*k|0;const x=c.getContext("2d");
+  if(camFace==="user"){x.translate(c.width,0);x.scale(-1,1)}
+  x.drawImage(v,0,0,c.width,c.height);
+  let q=.75,u=c.toDataURL("image/jpeg",q);while(u.length>220000&&q>.3){q-=.1;u=c.toDataURL("image/jpeg",q)}
+  gotPhoto(u);
+};
 $("#sp-pick").onclick=()=>$("#sp-file").click();
-$("#sp-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>{spImg=u;$("#sp-img").src=u;$("#sp-img").hidden=false;$("#sp-send").disabled=false},900,220000)};
+$("#sp-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,gotPhoto,900,220000)};
+$("#sp-retake").onclick=()=>snapView("choice");
 $("#sp-secs").onclick=e=>{const b=e.target.closest("button");if(!b)return;spSecs=+b.dataset.s;[...$("#sp-secs").children].forEach(x=>x.classList.toggle("on",x===b))};
 $("#sp-send").onclick=async()=>{
-  const to=$("#sp-to").value;if(!to||!spImg){$("#sp-msg").textContent="pick a photo and a person.";return}
+  const to=$("#sp-to").value;if(!to||!spImg){$("#sp-msg").textContent="pick a person first.";return}
+  $("#sp-send").disabled=true;
   try{await addDoc(collection(db,"messages"),{from:myId,to,snap:true,img:spImg,text:$("#sp-cap").value.trim(),secs:spSecs,opened:false,ts:Date.now(),hearts:[]});closeOv();tab=to;tabsR();log(true)}
-  catch(e){$("#sp-msg").textContent="couldn’t send. publish the new Firebase rules first."}
+  catch(e){$("#sp-msg").textContent="couldn’t send the snap: "+(e.code||e.message);$("#sp-send").disabled=false}
 };
+$("#sp-chat").onclick=async()=>{const inp=$("#msg"),old=inp.value;inp.value=$("#sp-cap").value;await send(spImg);inp.value=old;closeOv()};
+$("#nbtn").onclick=async()=>{
+  if(!("Notification" in window))return;
+  if(lsGet("ark-notif")==="1"&&Notification.permission==="granted"){try{localStorage.setItem("ark-notif","0")}catch(e){}drawNotif();return}
+  const p=await Notification.requestPermission();
+  try{localStorage.setItem("ark-notif",p==="granted"?"1":"0")}catch(e){}
+  if(p==="granted"&&navigator.serviceWorker)try{await navigator.serviceWorker.register("sw.js")}catch(e){}
+  drawNotif();
+};
+addEventListener("focus",()=>{unreadN=0;document.title="The Ark"});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){unreadN=0;document.title="The Ark"}});
 $("#bg-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>{try{localStorage.setItem("ark-bgp",u);localStorage.setItem("ark-bg","photo")}catch(err){smsg("that photo is too big for this browser.")}applyBg();drawBgs()},1280,700000)};
 $("#sx").onclick=closeOv;
 $("#settings").addEventListener("click",e=>{if(e.target.id==="settings")e.target.classList.remove("on")});
@@ -524,7 +594,7 @@ $("#sout").onclick=async()=>{try{localStorage.removeItem("ark-name")}catch(e){}t
 addEventListener("hashchange",()=>{if(location.hash==="#claim"&&myId)claimOwner()});
 $("#log").addEventListener("click",e=>{if(!e.target.closest(".m")){document.querySelectorAll(".m.sel").forEach(x=>x.classList.remove("sel"));openMenu=null}});
 $("#msg").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing)send()});
-$("#cam").onclick=()=>$("#file").click();
+$("#cam").onclick=()=>{closeOv();openSnap();setOn($("#bSnap"))};
 $("#file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f&&myId)shrink(f,send)};
 
 function lock(on){$("#msg").disabled=$("#send").disabled=$("#cam").disabled=on}
@@ -549,7 +619,7 @@ async function start(name){
     msgs=[...store.values()].sort((a,b)=>a.ts-b.ts);
     msgs.forEach(m=>{
       if(seen.has(m.id))return;seen.add(m.id);
-      if(!first&&m.ts>loadT&&m.from!==myId&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;if(k!==tab||!document.body.classList.contains("open"))unread[k]=1}
+      if(!first&&m.ts>loadT&&m.from!==myId&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;const here=document.body.classList.contains("open")&&k===tab&&!document.hidden;if(!here){unread[k]=1;notify(m)}}
     });
     first=false;tabsR();log();
   },()=>{});
@@ -587,6 +657,7 @@ if(ready){
   $("#join").onclick=join;[$("#nm"),$("#pw")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")join()}));
 }
 tabsR();log();pairs();applyBg();
+if(lsGet("ark-notif")==="1"&&navigator.serviceWorker)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
