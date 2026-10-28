@@ -183,6 +183,7 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
 #sp-img{max-height:180px;max-width:100%;object-fit:contain;border-radius:16px;align-self:center}
 .secs{display:flex;gap:.5rem}
 .secs button{flex:1;height:42px;border-radius:999px;background:var(--input);font-weight:800}
+.secs button:disabled{opacity:.35;cursor:not-allowed}
 .secs button.on{background:var(--ink);color:var(--panel)}
 .bgs{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center}
 .obtn{padding:.4em 1em;background:var(--input);font-size:.95rem;color:var(--ink)}
@@ -274,8 +275,10 @@ body.open #chat{clip-path:circle(160vmax at var(--x,50%) var(--y,50%));visibilit
     <label>notifications</label>
     <div class="srow"><button class="pill obtn" id="nbtn">turn on notifications</button></div>
     <small id="nmsg"></small>
-    <label>chat background (this device)</label>
+    <label id="bglabel">chat background</label>
+    <div class="secs" id="bgscope"><button data-w="me" class="on">just me</button><button data-w="all">everyone in this chat</button></div>
     <div class="bgs" id="bgs"></div>
+    <small id="bgmsg"></small>
     <input type="file" id="bg-file" accept="image/*" hidden>
     <small id="slogin"></small>
     <small id="smsg"></small>
@@ -316,7 +319,7 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 
-let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="",bannedList=[],spImg="",spSecs=5,snapTimer=0;
+let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="",bannedList=[],spImg="",spSecs=5,snapTimer=0,bgScope="me",sharedBg={};
 const loadT=Date.now(),pn=id=>names[id]||"someone";
 const PAL=["#ff5d8f","#ff9f1c","#f2c744","#2ec4b6","#4ea8ff","#9b7bff","#7bd88f","#e07bff","#17a2b8","#c97b4a"],colors={};
 const col=id=>colors[id]||PAL[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
@@ -376,6 +379,7 @@ function bubble(m,cont){
   return d;
 }
 function log(jump){
+  applyBg();
   const L=$("#log"),near=L.scrollHeight-L.scrollTop-L.clientHeight<90;L.textContent="";
   const list=msgs.filter(vis);
   if(!list.length)L.append(mk("p","sys",!ready?"chat isn’t set up yet.":!myId?"pick a name to start chatting.":tab==="group"?"say hi to the group.":"just you and "+pn(tab)+"."));
@@ -427,15 +431,51 @@ function openSettings(){
 }
 const BGS=[["none",""],["sunset","linear-gradient(135deg,#ff9a76,#ff5d8f 55%,#6a3df0)"],["ocean","linear-gradient(160deg,#2ec4b6,#2b6cb0 60%,#1a1f4b)"],["forest","linear-gradient(160deg,#7bd88f,#1f7a5a 55%,#0f2b2b)"],["night","linear-gradient(160deg,#2a2a5a,#0d0d1f)"]];
 const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return""}};
+const thr=()=>tab==="group"?"group":[myId,tab].sort().join("_");
+const PH=u=>'linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url("'+u+'")';
+const bgCss=(name,photo)=>{if(name==="photo")return photo?PH(photo):"";const g=BGS.find(b=>b[0]===name);return g?g[1]:""};
+// your own pick for this chat wins; otherwise the shared one everyone in the chat sees
+function bgFor(k){
+  const mine=lsGet("ark-bg:"+k);
+  if(mine)return mine==="none"?"":bgCss(mine,lsGet("ark-bgp:"+k));
+  const sh=sharedBg[k];return sh?bgCss(sh.bg,sh.photo):"";
+}
+let lastBg=null;
 function applyBg(){
-  const P=$(".panel"),k=lsGet("ark-bg"),g=BGS.find(b=>b[0]===k),ph=lsGet("ark-bgp");
-  const v=k==="photo"&&ph?'linear-gradient(rgba(0,0,0,.45),rgba(0,0,0,.45)),url("'+ph+'")':g&&g[1]?g[1]:"";
+  const P=$(".panel"),v=bgFor(thr());if(v===lastBg)return;lastBg=v;
   P.classList.toggle("bg",!!v);P.style.backgroundImage=v;
 }
+const bgmsg=t=>{$("#bgmsg").textContent=t};
+async function setShared(val,photo){
+  const k=thr(),ref=doc(db,"chatbg",k);
+  try{
+    if(val==="none"){const sn=await getDoc(ref);if(sn.exists())await deleteDoc(ref)}
+    else await setDoc(ref,{bg:val,photo:photo||"",by:myId,ts:Date.now(),members:k==="group"?[]:[myId,tab]});
+  }catch(e){bgmsg("couldn’t save for everyone: "+(e.code||e.message))}
+}
+async function pickBg(val,photo){
+  const k=thr();
+  if(bgScope==="all")await setShared(val,photo);
+  else try{
+    if(val==="inherit"){localStorage.removeItem("ark-bg:"+k);localStorage.removeItem("ark-bgp:"+k)}
+    else{localStorage.setItem("ark-bg:"+k,val);if(val==="photo")localStorage.setItem("ark-bgp:"+k,photo)}
+  }catch(e){bgmsg("that photo is too big to keep on this device.")}
+  lastBg=null;applyBg();drawBgs();
+}
 function drawBgs(){
-  const box=$("#bgs"),k=lsGet("ark-bg");box.textContent="";
-  BGS.forEach(([n,g])=>{const b=mk("button","swb"+((k||"none")===n?" on":""));b.style.background=g||"var(--input)";b.title=n;b.setAttribute("aria-label",n+" background");b.onclick=()=>{try{localStorage.setItem("ark-bg",n==="none"?"":n)}catch(e){}applyBg();drawBgs()};box.append(b)});
-  const p=mk("button","pill obtn"+(k==="photo"?" sel":""),"my photo…");p.onclick=()=>$("#bg-file").click();box.append(p);
+  const box=$("#bgs"),k=thr(),isOwn=ownerId&&ownerId===myId,allowAll=tab!=="group"||isOwn;
+  if(bgScope==="all"&&!allowAll)bgScope="me";
+  $("#bglabel").textContent="background for "+(tab==="group"?"the group":pn(tab));
+  [...$("#bgscope").children].forEach(b=>{b.classList.toggle("on",b.dataset.w===bgScope);if(b.dataset.w==="all")b.disabled=!allowAll});
+  $("#bgmsg").textContent=tab==="group"&&!isOwn?"only the owner can set the group’s shared background.":bgScope==="all"?"everyone in this chat who hasn’t picked their own will see this one.":"only you will see this one, on this device.";
+  const cur=bgScope==="all"?(sharedBg[k]?sharedBg[k].bg:"none"):(lsGet("ark-bg:"+k)||"inherit");
+  box.textContent="";
+  (bgScope==="all"?BGS:[["inherit",""],...BGS]).forEach(([n,g])=>{
+    const b=mk("button","swb"+(cur===n?" on":""));
+    if(n==="inherit"){b.textContent="↺";b.title="same as everyone";b.style.background="var(--input)"}else{b.style.background=g||"var(--input)";b.title=n}
+    b.setAttribute("aria-label",n+" background");b.onclick=()=>pickBg(n);box.append(b);
+  });
+  const p=mk("button","pill obtn"+(cur==="photo"?" sel":""),"my photo…");p.onclick=()=>$("#bg-file").click();box.append(p);
 }
 function setOn(b){document.querySelectorAll(".sb").forEach(x=>x.classList.toggle("on",x===b))}
 function closeOv(){stopCam();document.querySelectorAll(".ov.on").forEach(x=>x.classList.remove("on"));setOn($("#bChat"))}
@@ -577,7 +617,8 @@ $("#nbtn").onclick=async()=>{
 };
 addEventListener("focus",()=>{unreadN=0;document.title="The Ark"});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){unreadN=0;document.title="The Ark"}});
-$("#bg-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>{try{localStorage.setItem("ark-bgp",u);localStorage.setItem("ark-bg","photo")}catch(err){smsg("that photo is too big for this browser.")}applyBg();drawBgs()},1280,700000)};
+$("#bg-file").onchange=e=>{const f=e.target.files[0];e.target.value="";if(f)shrink(f,u=>pickBg("photo",u),bgScope==="all"?1000:1100,bgScope==="all"?250000:380000)};
+$("#bgscope").onclick=e=>{const b=e.target.closest("button");if(!b||b.disabled)return;bgScope=b.dataset.w;drawBgs()};
 $("#sx").onclick=closeOv;
 $("#settings").addEventListener("click",e=>{if(e.target.id==="settings")e.target.classList.remove("on")});
 $("#ssave").onclick=async()=>{
@@ -628,6 +669,11 @@ async function start(name){
     if(ownerId&&ownerId===myId&&!banSub){banSub=true;onSnapshot(collection(db,"banned"),b=>{bannedList=b.docs.map(d=>({id:d.id,...d.data()}));if($("#ownerp").classList.contains("on"))drawOwner()},()=>{})}
   },()=>{});
   if(location.hash==="#claim")claimOwner();
+  onSnapshot(doc(db,"chatbg","group"),s=>{if(s.exists())sharedBg.group=s.data();else delete sharedBg.group;applyBg();if($("#settings").classList.contains("on"))drawBgs()},()=>{});
+  onSnapshot(query(collection(db,"chatbg"),where("members","array-contains",myId)),s=>{
+    s.docChanges().forEach(c=>{const o=c.doc.data(),other=(o.members||[]).find(x=>x!==myId);if(!other)return;const k=[myId,other].sort().join("_");if(c.type==="removed")delete sharedBg[k];else sharedBg[k]=o});
+    applyBg();if($("#settings").classList.contains("on"))drawBgs();
+  },()=>{});
   const M=collection(db,"messages");
   feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
   tabsR();log();
