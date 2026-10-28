@@ -255,6 +255,7 @@ h3.adm{background:linear-gradient(90deg,#ff5d3a,#ffd23f,#ff2d95,#ff5d3a);backgro
 #announce.a-ice{color:#eaffff;text-shadow:0 0 10px #00e5ff,0 0 32px #00b8ff,0 0 80px #0077ff}
 #announce.a-rainbow{background:linear-gradient(90deg,#ff3b3b,#ffd23f,#3bff7a,#3bd2ff,#ff3bd9,#ff3b3b) 0 0/300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
 #announce.a-rainbow.show{animation:ann 4.4s cubic-bezier(.2,.9,.2,1),flow 1.6s linear infinite}
+.sysline{align-self:center;text-align:center;color:var(--mute);font-size:.82rem;font-weight:700;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.25rem .8rem;border-radius:999px;margin:.2rem 0}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -316,6 +317,7 @@ h3.adm{background:linear-gradient(90deg,#ff5d3a,#ffd23f,#ff2d95,#ff5d3a);backgro
     <div class="srow"><button class="pill obtn" id="nbtn">turn on notifications</button></div>
     <small id="nmsg"></small>
     <label>effects</label>
+    <div class="srow"><button class="pill obtn" id="calmb">show effects: on</button></div>
     <div class="srow"><button class="pill obtn" id="sfxb">effect sounds: on</button></div>
     <small id="ownstat"></small>
     <label id="bglabel">chat background</label>
@@ -348,6 +350,7 @@ h3.adm{background:linear-gradient(90deg,#ff5d3a,#ffd23f,#ff2d95,#ff5d3a);backgro
     <div class="secs" id="pw"><button data-l="1" class="on">1×</button><button data-l="2">2×</button><button data-l="3">MAX</button></div>
     <label>effects · everyone sees them</label>
     <div class="fxg" id="fxg"><button data-t="fireworks" style="--h:20"><b>🎆</b><span>fireworks</span></button><button data-t="lasers" style="--h:350"><b>🔴</b><span>lasers</span></button><button data-t="confetti" style="--h:50"><b>🎊</b><span>confetti</span></button><button data-t="lightning" style="--h:200"><b>⚡</b><span>lightning</span></button><button data-t="shock" style="--h:30"><b>💥</b><span>shock</span></button><button data-t="meteors" style="--h:210"><b>☄️</b><span>meteors</span></button><button data-t="vortex" style="--h:170"><b>🌀</b><span>vortex</span></button><button data-t="inferno" style="--h:15"><b>🔥</b><span>inferno</span></button><button data-t="blizzard" style="--h:195"><b>❄️</b><span>blizzard</span></button><button data-t="rainbow" style="--h:120"><b>🌈</b><span>rainbow</span></button><button data-t="disco" style="--h:330"><b>🪩</b><span>disco</span></button><button data-t="matrix" style="--h:135"><b>👾</b><span>matrix</span></button><button data-t="hearts" style="--h:340"><b>💖</b><span>hearts</span></button><button data-t="nuke" style="--h:40"><b>💣</b><span>nuke</span></button><button data-t="finale" style="--h:45"><b>👑</b><span>finale</span></button></div>
+    <small id="fxstat"></small>
     <label>announce</label>
     <div class="secs" id="ast"><button data-a="neon" class="on">neon</button><button data-a="fire">fire</button><button data-a="ice">ice</button><button data-a="rainbow">rainbow</button></div>
     <div class="srow"><input id="ann" maxlength="60" placeholder="type something huge…" autocomplete="off"><button class="pill sbtn" id="annb">send</button></div>
@@ -371,7 +374,7 @@ const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target)}}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 
-let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="",bannedList=[],spImg="",spSecs=5,snapTimer=0,bgScope="all",sharedBg={},ownerErr="";
+let db=null,auth=null,myId="",members=[],msgs=[],names={},tab="group",seen=new Set(),unread={},first=true,shown=false,started=false,ready=false,replyTo=null,openMenu=null,ownerId="",bannedList=[],spImg="",spSecs=5,snapTimer=0,bgScope="all",sharedBg={},ownerErr="",fxK="",fxErr="";
 const loadT=Date.now(),pn=id=>names[id]||"someone";
 const PAL=["#ff5d8f","#ff9f1c","#f2c744","#2ec4b6","#4ea8ff","#9b7bff","#7bd88f","#e07bff","#17a2b8","#c97b4a"],colors={};
 const col=id=>colors[id]||PAL[[...String(id)].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
@@ -410,6 +413,7 @@ function jump(id){
   e.scrollIntoView({behavior:"smooth",block:"center"});e.classList.remove("flash");void e.offsetWidth;e.classList.add("flash");
 }
 function bubble(m,cont){
+  if(m.sys)return mk("div","sysline",(m.from===myId?"you":pn(m.from))+" "+m.text);
   const mine=m.from===myId,d=mk("div","m"+(mine?" me":"")),body=mk("div","body");
   d.dataset.id=m.id;d.style.setProperty("--c",col(m.from));
   if(cont)d.classList.add("cont");else d.append(mk("b","who2",mine?"ME":pn(m.from).toUpperCase()));
@@ -436,7 +440,7 @@ function log(jump){
   const L=$("#log"),near=L.scrollHeight-L.scrollTop-L.clientHeight<90;L.textContent="";
   const list=msgs.filter(vis);
   if(!list.length)L.append(mk("p","sys",!ready?"chat isn’t set up yet.":!myId?"pick a name to start chatting.":tab==="group"?"say hi to the group.":"just you and "+pn(tab)+"."));
-  list.forEach((m,i)=>L.append(bubble(m,i>0&&list[i-1].from===m.from)));
+  list.forEach((m,i)=>L.append(bubble(m,i>0&&!list[i-1].sys&&!m.sys&&list[i-1].from===m.from)));
   if(jump||near)L.scrollTop=L.scrollHeight;
 }
 function note(t){const L=$("#log"),p=mk("p","sys fade",t);L.append(p);L.scrollTop=L.scrollHeight;setTimeout(()=>p.remove(),2800)}
@@ -480,10 +484,10 @@ function openSettings(){
   $("#sname").value=names[myId]||"";
   const em=(auth.currentUser&&auth.currentUser.email)||"";
   $("#slogin").textContent="you sign in with the name “"+em.split("@")[0]+"”. that part never changes.";
-  smsg("");drawSw();drawBgs();drawNotif();drawSfx();drawOwn();$("#settings").classList.add("on");
+  smsg("");drawSw();drawBgs();drawNotif();drawSfx();drawCalm();drawOwn();$("#settings").classList.add("on");
 }
 /* ---------- admin console: effects the owner fires and everyone sees ---------- */
-const cv=$("#fx"),cx=cv.getContext("2d"),calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cv=$("#fx"),cx=cv.getContext("2d"),calm=()=>lsGet("ark-calm")==="1";
 let W=0,H=0,S=1,parts=[],beams=[],bolts=[],rings=[],sched=[],emit=[],flash=0,fh=null,raf=0,last=0,ac=null,lastSnd=0,pwr=1,ast="neon";
 const R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.random()*a.length|0];
 function fit(){S=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*S;H=cv.height=innerHeight*S}
@@ -590,14 +594,17 @@ function loop(t){
 }
 function announce(t,st){
   const a=$("#announce");a.textContent=t;a.className="a-"+(["neon","fire","ice","rainbow"].includes(st)?st:"neon");void a.offsetWidth;
-  if(calm){a.style.opacity=1;setTimeout(()=>a.style.opacity=0,4000);return}
+  if(calm()){a.style.opacity=1;setTimeout(()=>a.style.opacity=0,4000);return}
   a.classList.add("show");snd("whoosh");
 }
 const FX={fireworks,lasers,confetti,lightning,shock,meteors,vortex,inferno,blizzard,rainbow,disco,matrix,hearts,nuke,finale};
-function playFx(d){if(d.type==="announce")return announce(d.text||"",d.st);if(!calm&&FX[d.type])FX[d.type]([1,2,3].includes(d.lv)?d.lv:1)}
+function playFx(d){if(d.type==="announce")return announce(d.text||"",d.st);if(!calm()&&FX[d.type])FX[d.type]([1,2,3].includes(d.lv)?d.lv:1)}
+const fxMsg=t=>{$("#fxstat").textContent=t};
 async function sendFx(type,text){
-  try{await setDoc(doc(db,"fx","latest"),{type,text:text||"",lv:pwr,st:ast,k:Math.random().toString(36).slice(2),ts:Date.now(),by:myId})}
-  catch(e){alert("Couldn’t fire that: "+(e.code||e.message)+"\n\nPublish the latest Firebase rules.")}
+  const k=Math.random().toString(36).slice(2),d={type,text:text||"",lv:pwr,st:ast,k,ts:Date.now(),by:myId};
+  fxK=k;playFx(d);
+  try{await setDoc(doc(db,"fx","latest"),d);fxMsg("sent to everyone ✓")}
+  catch(e){fxMsg("others can’t see it: "+(e.code||e.message)+". publish the latest Firebase rules.")}
 }
 const segs=(id,fn)=>{$(id).onclick=e=>{const b=e.target.closest("button");if(!b)return;fn(b);[...$(id).children].forEach(x=>x.classList.toggle("on",x===b))}};
 segs("#pw",b=>{pwr=+b.dataset.l});segs("#ast",b=>{ast=b.dataset.a});
@@ -606,7 +613,9 @@ const sendAnn=()=>{const t=$("#ann").value.trim();if(t){sendFx("announce",t);$("
 $("#annb").onclick=sendAnn;$("#ann").addEventListener("keydown",e=>{if(e.key==="Enter")sendAnn()});
 function drawSfx(){$("#sfxb").textContent="effect sounds: "+(lsGet("ark-sfx")==="0"?"off":"on")}
 $("#sfxb").onclick=()=>{try{localStorage.setItem("ark-sfx",lsGet("ark-sfx")==="0"?"1":"0")}catch(e){}drawSfx()};
-function drawOwn(){$("#ownstat").textContent=ownerErr?"couldn’t check who owns this ark ("+ownerErr+"). publish the latest Firebase rules.":!ownerId?"nobody has claimed ownership yet.":ownerId===myId?"you’re the owner 🛡️":"someone else owns this ark."}
+function drawCalm(){$("#calmb").textContent="show effects: "+(calm()?"off (calm mode)":"on")}
+$("#calmb").onclick=()=>{try{localStorage.setItem("ark-calm",calm()?"0":"1")}catch(e){}drawCalm()};
+function drawOwn(){$("#ownstat").textContent=fxErr?"effects are blocked ("+fxErr+"). publish the latest Firebase rules.":ownerErr?"couldn’t check who owns this ark ("+ownerErr+"). publish the latest Firebase rules.":!ownerId?"nobody has claimed ownership yet.":ownerId===myId?"you’re the owner 🛡️":"someone else owns this ark."}
 
 const BGS=[["none",""],["sunset","linear-gradient(135deg,#ff9a76,#ff5d8f 55%,#6a3df0)"],["ocean","linear-gradient(160deg,#2ec4b6,#2b6cb0 60%,#1a1f4b)"],["forest","linear-gradient(160deg,#7bd88f,#1f7a5a 55%,#0f2b2b)"],["night","linear-gradient(160deg,#2a2a5a,#0d0d1f)"]];
 const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return""}};
@@ -628,6 +637,7 @@ async function setShared(val,photo){
   try{
     if(val==="none"){const sn=await getDoc(ref);if(sn.exists())await deleteDoc(ref)}
     else await setDoc(ref,{bg:val,photo:photo||"",by:myId,ts:Date.now(),members:k==="group"?[]:[myId,tab]});
+    await addDoc(collection(db,"messages"),{from:myId,to:k==="group"?"group":tab,sys:true,text:val==="none"?"removed the background":val==="photo"?"set a photo as the background":"changed the background to "+val,ts:Date.now(),hearts:[]});
   }catch(e){bgmsg("couldn’t save for everyone: "+(e.code||e.message))}
 }
 async function pickBg(val,photo){
@@ -642,7 +652,7 @@ async function pickBg(val,photo){
 function drawBgs(){
   const box=$("#bgs"),k=thr();
   $("#bglabel").textContent="background for "+(tab==="group"?"the group":pn(tab));
-  $("#bgmsg").textContent="everyone in this chat sees this background.";
+  const sh=sharedBg[k];$("#bgmsg").textContent="everyone in this chat sees this background."+(sh&&sh.by?" last changed by "+(sh.by===myId?"you":pn(sh.by))+".":"");
   const cur=bgScope==="all"?(sharedBg[k]?sharedBg[k].bg:"none"):(lsGet("ark-bg:"+k)||"inherit");
   box.textContent="";
   (bgScope==="all"?BGS:[["inherit",""],...BGS]).forEach(([n,g])=>{
@@ -835,7 +845,7 @@ async function start(name){
     msgs.forEach(m=>{
       if(seen.has(m.id))return;seen.add(m.id);
       if(m.snap&&m.to==="group"&&m.from===myId&&Date.now()-m.ts>864e5)deleteDoc(doc(db,"messages",m.id)).catch(()=>{});
-      if(!first&&m.ts>loadT&&m.from!==myId&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;const here=document.body.classList.contains("open")&&k===tab&&!document.hidden;if(!here){unread[k]=1;notify(m)}}
+      if(!first&&m.ts>loadT&&m.from!==myId&&!m.sys&&(m.to==="group"||m.to===myId)){const k=m.to==="group"?"group":m.from;const here=document.body.classList.contains("open")&&k===tab&&!document.hidden;if(!here){unread[k]=1;notify(m)}}
     });
     first=false;tabsR();log();
   },()=>{});
@@ -849,13 +859,13 @@ async function start(name){
     s.docChanges().forEach(c=>{const o=c.doc.data(),other=(o.members||[]).find(x=>x!==myId);if(!other)return;const k=[myId,other].sort().join("_");if(c.type==="removed")delete sharedBg[k];else sharedBg[k]=o});
     applyBg();if($("#settings").classList.contains("on"))drawBgs();
   },()=>{});
-  let fxFirst=true,fxK="";
-  onSnapshot(doc(db,"fx","latest"),s=>{
-    if(s.metadata.fromCache||s.metadata.hasPendingWrites)return;
+  let fxFirst=true;
+  onSnapshot(doc(db,"fx","latest"),{includeMetadataChanges:true},s=>{
+    fxErr="";if(s.metadata.fromCache||s.metadata.hasPendingWrites)return;
     const d=s.exists()?s.data():null;
     if(fxFirst){fxFirst=false;fxK=d?d.k:"";return}
     if(d&&d.k!==fxK){fxK=d.k;playFx(d)}
-  },e=>console.warn("effects listener:",e.code));
+  },e=>{fxErr=e.code;console.warn("effects listener:",e.code)});
   const M=collection(db,"messages");
   feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
   tabsR();log();
