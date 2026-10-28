@@ -231,6 +231,14 @@ body.open .sb:nth-child(1){animation-delay:.35s}body.open .sb:nth-child(2){anima
 #side{flex-direction:row;margin:.2rem 1rem .8rem;padding:.45rem .55rem;overflow-x:auto}
 .sb{flex:none}.sb span{display:none}.sb.on::before{left:26%;right:26%;top:auto;bottom:-.5rem;width:auto;height:4px}
 }
+#fx{position:fixed;inset:0;width:100vw;height:100vh;z-index:100;pointer-events:none}
+#announce{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:2rem;pointer-events:none;opacity:0;text-align:center;font-size:clamp(2.4rem,10vw,8rem);font-weight:800;letter-spacing:-.045em;line-height:.95;color:#fff;text-shadow:0 0 10px #ff2d95,0 0 30px #ff2d95,0 0 70px #ff5d3a,3px 3px 0 #00e5ff}
+#announce.show{animation:ann 4.4s cubic-bezier(.2,.9,.2,1)}
+@keyframes ann{0%{opacity:0;transform:scale(.3) rotate(-5deg);filter:blur(14px)}9%{opacity:1;transform:scale(1.14) rotate(1.5deg);filter:blur(0)}15%{transform:scale(1) rotate(0)}85%{opacity:1;transform:scale(1.02)}100%{opacity:0;transform:scale(1.25);filter:blur(8px)}}
+.fxg{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.fxg button{height:48px;border-radius:14px;font-weight:800;background:var(--input);color:var(--ink);transition:transform .2s cubic-bezier(.3,1.6,.5,1),box-shadow .2s,background .2s}
+.fxg button:hover{transform:translateY(-2px) scale(1.04);background:linear-gradient(135deg,#ff5d3a,#ff2d95);color:#fff;box-shadow:0 8px 22px rgba(255,45,149,.4)}
+.fxg button:active{transform:scale(.94)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
 </style>
 </head>
@@ -317,12 +325,18 @@ body.open .sb:nth-child(1){animation-delay:.35s}body.open .sb:nth-child(2){anima
   </div></div>
   <div id="ownerp" class="ov" aria-hidden="true"><div class="card">
     <div class="chead"><h3>owner</h3><button id="ox" aria-label="close">✕</button></div>
+    <label>admin abuse 😈</label>
+    <div class="fxg" id="fxg"><button data-t="fireworks">🎆 fireworks</button><button data-t="lasers">🔴 lasers</button><button data-t="confetti">🎊 confetti</button><button data-t="lightning">⚡ lightning</button><button data-t="shock">💥 shockwave</button><button data-t="finale">👑 finale</button></div>
+    <div class="srow"><input id="ann" maxlength="60" placeholder="announce to everyone…" autocomplete="off"><button class="pill sbtn" id="annb">send</button></div>
     <label>people</label><div id="olist"></div>
     <label>banned</label><div id="oban"></div>
     <small>kick takes someone off the list, and they can come back by reopening the site. ban locks them out until you unban them.</small>
   </div></div>
   <div id="snapview"><div id="sv-top"><span id="sv-from"></span><i id="sv-bar"></i></div><img id="sv-img" alt=""><p id="sv-cap"></p><small>tap to close</small></div>
 </div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="announce" aria-live="polite"></div>
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -444,6 +458,86 @@ function openSettings(){
   $("#slogin").textContent="you sign in with the name “"+em.split("@")[0]+"”. that part never changes.";
   smsg("");drawSw();drawBgs();drawNotif();$("#settings").classList.add("on");
 }
+/* ---------- admin effects: the owner fires them, everyone sees them ---------- */
+const cv=$("#fx"),cx=cv.getContext("2d"),calm=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let W=0,H=0,S=1,parts=[],beams=[],bolts=[],rings=[],sched=[],flash=0,raf=0,last=0;
+const R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.random()*a.length|0];
+function fit(){S=Math.min(devicePixelRatio||1,2);W=cv.width=innerWidth*S;H=cv.height=innerHeight*S}
+addEventListener("resize",fit);fit();
+const go=()=>{if(!raf){last=performance.now();raf=requestAnimationFrame(loop)}};
+const later=(ms,fn)=>{sched.push({at:performance.now()+ms,fn});go()};
+function spark(x,y,vx,vy,h,o={}){parts.push({x,y,px:x,py:y,vx,vy,h,g:o.g??.06*S,dr:o.dr??.985,life:0,max:o.max??R(55,95),sz:o.sz??2*S,l:o.l??60,cr:o.cr,rk:o.rk,tw:o.tw});go()}
+function rocket(x){const h=R(0,360),top=R(.12,.42)*H,g=.12*S;spark(x,H,R(-.6,.6)*S,-Math.sqrt(2*g*(H-top)),h,{g,dr:1,max:999,sz:3*S,l:80,rk:1})}
+function explode(x,y,h){
+  const ty=pick(["sphere","ring","willow","heart","double"]),n=ty==="ring"?80:ty==="heart"?90:150;
+  rings.push({x,y,r:0,vr:9*S,life:0,max:22,h});flash=Math.max(flash,.06);
+  for(let i=0;i<n;i++){
+    const a=i/n*6.283,hh=h+R(-18,18);let vx,vy,o={cr:Math.random()<.18};
+    if(ty==="ring"){vx=Math.cos(a)*6.5*S;vy=Math.sin(a)*6.5*S}
+    else if(ty==="heart"){vx=16*Math.sin(a)**3*.42*S;vy=-(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))*.42*S}
+    else if(ty==="willow"){const sp=R(1,6)*S;vx=Math.cos(a)*sp;vy=Math.sin(a)*sp;o={g:.035*S,max:R(110,170),l:70,dr:.99,cr:true}}
+    else{const a2=R(0,6.283),sp=Math.sqrt(Math.random())*(ty==="double"&&i%2?4.5:9)*S;vx=Math.cos(a2)*sp;vy=Math.sin(a2)*sp}
+    spark(x,y,vx,vy,hh,o);
+  }
+  for(let i=0;i<16;i++)spark(x,y,R(-3,3)*S,R(-3,3)*S,0,{l:96,max:28,sz:2.5*S});
+}
+function fireworks(){for(let i=0;i<11;i++)later(i*320+R(0,160),()=>rocket(R(.1,.9)*W));for(let i=0;i<3;i++)later(3900+i*120,()=>rocket(R(.3,.7)*W))}
+function lasers(){
+  const cols=[0,185,120,300,340,50],org=[[0,H],[W,H],[W/2,H],[0,0],[W,0],[W/2,0],[0,H/2],[W,H/2]];
+  for(let i=0;i<16;i++){const o=org[i%org.length];later(i*130,()=>beams.push({x:o[0],y:o[1],base:Math.atan2(H/2-o[1],W/2-o[0])+R(-.5,.5),amp:R(.4,1.1),sp:R(.03,.07),ph:R(0,6.28),h:pick(cols),f:0,max:R(160,240)}))}
+}
+function confetti(){for(let i=0;i<200;i++){const left=i%2,a=left?R(-1.3,-.7):R(-2.4,-1.8),sp=R(10,22)*S;spark(left?0:W,H,Math.cos(a)*sp,Math.sin(a)*sp,R(0,360),{g:.28*S,dr:.975,max:R(110,190),sz:R(3,6)*S,l:62,tw:1})}}
+function bolt(x0,y0,x1,y1,d){if(!d)return[[x0,y0],[x1,y1]];const mx=(x0+x1)/2+R(-1,1)*(y1-y0)*.13,my=(y0+y1)/2;return[...bolt(x0,y0,mx,my,d-1),...bolt(mx,my,x1,y1,d-1).slice(1)]}
+function lightning(){
+  const strike=()=>{const x=R(.2,.8)*W;flash=.85;bolts.push({pts:bolt(x,0,x+R(-.2,.2)*W,H*R(.6,.95),6),life:0,max:16})};
+  strike();later(220,strike);later(440,()=>{flash=.5});
+}
+function shock(){flash=.6;for(let i=0;i<5;i++)later(i*160,()=>rings.push({x:W/2,y:H/2,r:0,vr:34*S,life:0,max:42,h:pick([0,185,300,50])}))}
+function finale(){lightning();later(350,fireworks);later(600,lasers);later(1400,confetti);later(3200,shock)}
+function loop(t){
+  const dt=Math.min((t-last)/16.67,3);last=t;
+  cx.globalCompositeOperation="destination-out";cx.fillStyle="rgba(0,0,0,"+(beams.length||bolts.length?.4:.17)+")";cx.fillRect(0,0,W,H);
+  cx.globalCompositeOperation="lighter";cx.lineCap="round";
+  const due=sched.filter(e=>t>=e.at);sched=sched.filter(e=>t<e.at);due.forEach(e=>e.fn());
+  const cur=parts;parts=[];
+  cur.forEach(p=>{
+    p.px=p.x;p.py=p.y;p.vx*=p.dr;p.vy=p.vy*p.dr+p.g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life+=dt;
+    if(p.rk){spark(p.x,p.y,R(-.3,.3)*S,R(.2,1)*S,p.h,{max:R(14,26),sz:1.6*S,g:.01*S,l:75});if(p.vy>-S){explode(p.x,p.y,p.h);return}}
+    const k=1-p.life/p.max;
+    if(k<=0||p.y>H+60||p.x<-60||p.x>W+60){if(p.cr)for(let i=0;i<4;i++)spark(p.x,p.y,R(-2,2)*S,R(-2,2)*S,0,{l:96,max:18,sz:S,g:.03*S});return}
+    const a=(k<.35?k/.35:1)*(p.tw?.4+.6*Math.random():1);
+    cx.strokeStyle="hsla("+p.h+",100%,"+p.l+"%,"+a+")";cx.lineWidth=p.sz;cx.beginPath();cx.moveTo(p.px,p.py);cx.lineTo(p.x,p.y);cx.stroke();
+    parts.push(p);
+  });
+  beams=beams.filter(b=>{
+    b.f+=dt;const k=b.f/b.max;if(k>=1)return false;
+    const a=Math.min(1,b.f/10,(1-k)*4)*(.8+.2*Math.random()),ang=b.base+Math.sin(b.f*b.sp+b.ph)*b.amp,L=Math.hypot(W,H)*1.2,ex=b.x+Math.cos(ang)*L,ey=b.y+Math.sin(ang)*L;
+    [[16,.07,55],[7,.22,60],[2.2,.95,92]].forEach(([w,al,l])=>{cx.strokeStyle="hsla("+b.h+",100%,"+l+"%,"+al*a+")";cx.lineWidth=w*S;cx.beginPath();cx.moveTo(b.x,b.y);cx.lineTo(ex,ey);cx.stroke()});
+    cx.fillStyle="hsla("+b.h+",100%,70%,"+.5*a+")";cx.beginPath();cx.arc(b.x,b.y,16*S,0,6.283);cx.fill();return true;
+  });
+  bolts=bolts.filter(b=>{
+    b.life+=dt;if(b.life>=b.max)return false;const a=1-b.life/b.max;
+    [[14*S,.25,"rgba(120,200,255,"],[4*S,.95,"rgba(255,255,255,"]].forEach(([w,al,c])=>{cx.strokeStyle=c+al*a+")";cx.lineWidth=w;cx.beginPath();b.pts.forEach((q,i)=>i?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1]));cx.stroke()});return true;
+  });
+  rings=rings.filter(r=>{
+    r.life+=dt;if(r.life>=r.max)return false;r.vr*=Math.pow(.95,dt);r.r+=r.vr*dt;const a=1-r.life/r.max;
+    cx.strokeStyle="hsla("+r.h+",100%,65%,"+a+")";cx.lineWidth=(5-3*r.life/r.max)*S;cx.beginPath();cx.arc(r.x,r.y,r.r,0,6.283);cx.stroke();return true;
+  });
+  if(flash>.01){cx.fillStyle="rgba(255,255,255,"+flash+")";cx.fillRect(0,0,W,H);flash*=Math.pow(.86,dt)}else flash=0;
+  if(parts.length||beams.length||bolts.length||rings.length||sched.length||flash)raf=requestAnimationFrame(loop);
+  else{raf=0;cx.globalCompositeOperation="source-over";cx.clearRect(0,0,W,H)}
+}
+function announce(t){const a=$("#announce");a.textContent=t;a.classList.remove("show");void a.offsetWidth;a.classList.add("show")}
+const FX={fireworks,lasers,confetti,lightning,shock,finale};
+function playFx(d){if(d.type==="announce")return announce(d.text||"");if(!calm&&FX[d.type])FX[d.type]()}
+async function sendFx(type,text){
+  try{await setDoc(doc(db,"fx","latest"),{type,text:text||"",k:Math.random().toString(36).slice(2),ts:Date.now(),by:myId})}
+  catch(e){alert("Couldn’t fire that: "+(e.code||e.message)+"\n\nPublish the new Firebase rules.")}
+}
+$("#fxg").onclick=e=>{const b=e.target.closest("button");if(b)sendFx(b.dataset.t)};
+const sendAnn=()=>{const t=$("#ann").value.trim();if(t){sendFx("announce",t);$("#ann").value=""}};
+$("#annb").onclick=sendAnn;$("#ann").addEventListener("keydown",e=>{if(e.key==="Enter")sendAnn()});
+
 const BGS=[["none",""],["sunset","linear-gradient(135deg,#ff9a76,#ff5d8f 55%,#6a3df0)"],["ocean","linear-gradient(160deg,#2ec4b6,#2b6cb0 60%,#1a1f4b)"],["forest","linear-gradient(160deg,#7bd88f,#1f7a5a 55%,#0f2b2b)"],["night","linear-gradient(160deg,#2a2a5a,#0d0d1f)"]];
 const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return""}};
 const thr=()=>tab==="group"?"group":[myId,tab].sort().join("_");
@@ -683,6 +777,12 @@ async function start(name){
   onSnapshot(query(collection(db,"chatbg"),where("members","array-contains",myId)),s=>{
     s.docChanges().forEach(c=>{const o=c.doc.data(),other=(o.members||[]).find(x=>x!==myId);if(!other)return;const k=[myId,other].sort().join("_");if(c.type==="removed")delete sharedBg[k];else sharedBg[k]=o});
     applyBg();if($("#settings").classList.contains("on"))drawBgs();
+  },()=>{});
+  let fxFirst=true,fxK="";
+  onSnapshot(doc(db,"fx","latest"),s=>{
+    const d=s.exists()?s.data():null;
+    if(fxFirst){fxFirst=false;fxK=d?d.k:"";return}
+    if(d&&d.k!==fxK){fxK=d.k;playFx(d)}
   },()=>{});
   const M=collection(db,"messages");
   feed(query(M,where("to","==","group")));feed(query(M,where("to","==",myId)));feed(query(M,where("from","==",myId)));
